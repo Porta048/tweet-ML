@@ -4,7 +4,6 @@ import numpy as np
 from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import seaborn as sns
-from data_preparation import TweetPreprocessor
 from sentiment_model import SentimentLSTM, SentimentTrainer, TweetDataset, save_vocabulary
 import os
 import torch.nn as nn
@@ -167,6 +166,33 @@ def evaluate_model(trainer, test_loader, vocab_to_idx, best_model_path='models/b
     print("="*60)
     
     return test_detailed_metrics
+
+def calculate_class_weights(train_file='data/train.csv'):
+    """Calcola i pesi delle classi per gestire lo sbilanciamento."""
+    print("⚖️ Calcolo dei pesi delle classi...")
+    try:
+        train_df = pd.read_csv(train_file)
+        # Conta il numero di occorrenze per ogni classe
+        class_counts = train_df['sentiment'].value_counts()
+        
+        # Calcola i pesi: peso = totale_campioni / (num_classi * campioni_per_classe)
+        num_samples = len(train_df)
+        num_classes = len(class_counts)
+        
+        weights = {i: num_samples / (num_classes * count) for i, count in class_counts.items()}
+        
+        # Ordina i pesi per indice di classe (0, 1, ...) e converti in tensore
+        class_weights_tensor = torch.tensor([weights[i] for i in sorted(weights.keys())], dtype=torch.float)
+        
+        print(f"   Distribuzione classi: {class_counts.to_dict()}")
+        print(f"   Pesi calcolati: {class_weights_tensor.tolist()}")
+        return class_weights_tensor
+    except FileNotFoundError:
+        print(f"⚠️ File '{train_file}' non trovato. Salto il calcolo dei pesi.")
+        return None
+    except Exception as e:
+        print(f"❌ Errore nel calcolo dei pesi: {e}. Salto il calcolo.")
+        return None
 
 def get_memory_info():
     """Ottiene informazioni sulla memoria disponibile"""
@@ -449,7 +475,9 @@ def train_model_with_config(config: 'ConfigManager') -> dict:
             'total_params': total_params,
             'trainable_params': trainable_params,
             'vocab_size': vocab_size,
-            'final_epoch': len(history['train_losses'])
+            'final_epoch': len(history['train_losses']),
+            'best_model_path': best_model_path,
+            'vocabulary_path': vocab_file
         }
         
         # Aggiungi metriche del training
@@ -510,8 +538,10 @@ def train_model_with_config(config: 'ConfigManager') -> dict:
         }
 
 def main():
-    """Funzione principale per l'addestramento completo"""
-    
+    """
+    Funzione principale per lanciare il training.
+    """
+    # --------------------------------------------------------------------------
     print("="*60)
     print("ADDESTRAMENTO RETE NEURALE PER SENTIMENT ANALYSIS")
     print("="*60)
@@ -690,5 +720,38 @@ def main():
     print("- models/training_history.png: Grafici addestramento")
     print("- data/: Dataset processati")
 
-if __name__ == "__main__":
+    # Lancia il processo di training con la configurazione caricata
+    results = train_model_with_config(config)
+
+    # Al termine, esegui la valutazione finale se ha prodotto un modello
+    if results and results.get('best_model_path'):
+        print("\n" + "="*60)
+        print("🚀 FASE FINALE: VALUTAZIONE DEL MODELLO ADDESTRATO")
+        print("="*60)
+        
+        # Ricarica le componenti necessarie per la valutazione indipendente
+        # Questo assicura che la valutazione possa essere eseguita anche separatamente
+        
+        # Carica il vocabolario salvato
+        with open(results['vocabulary_path'], 'rb') as f:
+            vocab_data = torch.load(f)
+            vocab_to_idx = vocab_data['vocab_to_idx']
+        
+        # Crea un dataloader per il test
+        test_dataset = TweetDataset(pd.read_csv(config.data.test_path), vocab_to_idx, config.data.max_length)
+        test_loader = DataLoader(test_dataset, batch_size=config.data.batch_size, shuffle=False, num_workers=config.hardware.num_workers)
+        
+        # Ricrea il modello e il trainer per la valutazione
+        # (Questo è necessario per caricare lo stato e usare il metodo `predict`)
+        model = SentimentLSTM(vocab_size=len(vocab_to_idx), embedding_dim=config.model.embedding_dim, hidden_dim=config.model.hidden_dim, num_layers=config.model.num_layers, dropout=config.model.dropout, use_attention=config.model.use_attention, pooling_methods=config.model.pooling_methods, bidirectional=config.model.bidirectional)
+        optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate)
+        criterion = nn.CrossEntropyLoss()
+        device = torch.device(config.hardware.device)
+        model.to(device)
+        
+        trainer = SentimentTrainer(model, optimizer, criterion, None, device, config)
+        
+        evaluate_model(trainer, test_loader, vocab_to_idx, results['best_model_path'])
+
+if __name__ == '__main__':
     main() 

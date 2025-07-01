@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tweet Sentiment Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            max-width: 600px;
+            width: 90%;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.5em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 40px;
+            font-size: 1.1em;
+        }
+        
+        .input-group {
+            margin-bottom: 20px;
+        }
+        
+        textarea {
+            width: 100%;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 16px;
+            font-family: inherit;
+            resize: vertical;
+            min-height: 120px;
+            transition: border-color 0.3s;
+        }
+        
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .char-counter {
+            text-align: right;
+            color: #666;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+        
+        .analyze-btn {
+            width: 100%;
+            padding: 15px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+        
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .analyze-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .result {
+            margin-top: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            display: none;
+        }
+        
+        .result.positive {
+            background: #d4edda;
+            border: 2px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .result.negative {
+            background: #f8d7da;
+            border: 2px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .result.error {
+            background: #fff3cd;
+            border: 2px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .sentiment-label {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .confidence {
+            font-size: 18px;
+            margin-bottom: 15px;
+        }
+        
+        .details {
+            font-size: 14px;
+            color: #666;
+        }
+        
+        .loading {
+            text-align: center;
+            color: #667eea;
+            font-style: italic;
+        }
+        
+        .examples {
+            margin-top: 30px;
+            text-align: center;
+        }
+        
+        .example-btn {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            color: #495057;
+            padding: 8px 16px;
+            margin: 5px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        .example-btn:hover {
+            background: #e9ecef;
+            transform: translateY(-1px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Tweet Sentiment Analyzer</h1>
+        <p class="subtitle">Enter a tweet to analyze its sentiment in real-time</p>
+        
+        <div class="input-group">
+            <textarea 
+                id="tweetText" 
+                placeholder="Type your tweet here... (e.g., 'I love this beautiful day!')"
+                maxlength="280"
+                oninput="updateCounter()"
+            ></textarea>
+            <div class="char-counter">
+                <span id="charCount">0</span>/280
+            </div>
+        </div>
+        
+        <button class="analyze-btn" onclick="analyzeSentiment()" id="analyzeBtn">
+            Analyze Sentiment
+        </button>
+        
+        <div id="result" class="result">
+            <div class="sentiment-label" id="sentimentLabel"></div>
+            <div class="confidence" id="confidenceText"></div>
+            <div class="details" id="detailsText"></div>
+        </div>
+        
+        <div class="examples">
+            <p style="color: #666; margin-bottom: 15px;">Try these examples:</p>
+            <button class="example-btn" onclick="setExample('I love this product! It works perfectly!')">Positive Example</button>
+            <button class="example-btn" onclick="setExample('This is terrible customer service. Very disappointed!')">Negative Example</button>
+            <button class="example-btn" onclick="setExample('The weather is okay today, nothing special.')">Neutral Example</button>
+        </div>
+    </div>
+
+    <script>
+        function updateCounter() {
+            const textarea = document.getElementById('tweetText');
+            const counter = document.getElementById('charCount');
+            counter.textContent = textarea.value.length;
+        }
+        
+        function setExample(text) {
+            const textarea = document.getElementById('tweetText');
+            textarea.value = text;
+            updateCounter();
+            // Auto-analyze after setting example
+            setTimeout(() => analyzeSentiment(), 500);
+        }
+        
+        async function analyzeSentiment() {
+            const tweetText = document.getElementById('tweetText').value.trim();
+            const resultDiv = document.getElementById('result');
+            const analyzeBtn = document.getElementById('analyzeBtn');
+            
+            if (!tweetText) {
+                alert('Please enter some text to analyze!');
+                return;
+            }
+            
+            // Show loading state
+            analyzeBtn.disabled = true;
+            analyzeBtn.textContent = 'Analyzing...';
+            resultDiv.style.display = 'block';
+            resultDiv.className = 'result';
+            resultDiv.innerHTML = '<div class="loading">Analyzing sentiment...</div>';
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ text: tweetText })
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    showResult('error', 'Error', data.error, '');
+                } else {
+                    const sentiment = data.sentiment;
+                    const confidence = data.confidence;
+                    const probabilities = data.probabilities;
+                    
+                    const confidenceText = `Confidence: ${confidence}%`;
+                    const detailsText = `Positive: ${probabilities.positive}% | Negative: ${probabilities.negative}%`;
+                    
+                    showResult(
+                        sentiment.toLowerCase(), 
+                        sentiment, 
+                        confidenceText, 
+                        detailsText
+                    );
+                }
+                
+            } catch (error) {
+                showResult('error', 'Connection Error', 'Failed to connect to the server', '');
+            }
+            
+            // Reset button
+            analyzeBtn.disabled = false;
+            analyzeBtn.textContent = 'Analyze Sentiment';
+        }
+        
+        function showResult(type, sentiment, confidence, details) {
+            const resultDiv = document.getElementById('result');
+            const sentimentLabel = document.getElementById('sentimentLabel');
+            const confidenceText = document.getElementById('confidenceText');
+            const detailsText = document.getElementById('detailsText');
+            
+            resultDiv.className = `result ${type}`;
+            resultDiv.style.display = 'block';
+            
+            resultDiv.innerHTML = `
+                <div class="sentiment-label">${sentiment}</div>
+                <div class="confidence">${confidence}</div>
+                <div class="details">${details}</div>
+            `;
+        }
+        
+        // Allow Enter+Ctrl to submit
+        document.getElementById('tweetText').addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                analyzeSentiment();
+            }
+        });
+    </script>
+</body>
+</html> 

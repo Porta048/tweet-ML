@@ -25,4 +25,7 @@ wandb>=0.13.0  # Per Weights & Biases integration
 
 # Utilities
 colorama>=0.4.4  # Per output colorato
-rich>=12.0.0  # Per output formattato 
+rich>=12.0.0  # Per output formattato
+
+# Web Application
+flask>=2.3.0  # Per web interface 
