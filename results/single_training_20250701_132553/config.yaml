@@ -1,0 +1,176 @@
+data:
+  balance_dataset: true
+  lowercase: true
+  max_length: 100
+  max_samples: 20000
+  min_text_length: 3
+  min_vocab_freq: 2
+  positive_ratio: 0.5
+  remove_hashtags: false
+  remove_mentions: false
+  remove_numbers: false
+  remove_punctuation: false
+  remove_urls: true
+  test_split: 0.15
+  train_split: 0.7
+  val_split: 0.15
+  vocab_size_limit: 20000
+evaluation:
+  compute_accuracy: true
+  compute_auc_pr: true
+  compute_auc_roc: true
+  compute_confusion_matrix: true
+  compute_f1_score: true
+  compute_precision: true
+  compute_recall: true
+  compute_sensitivity: true
+  compute_specificity: true
+  plot_attention_visualization: true
+  plot_confusion_matrix: true
+  plot_precision_recall_curve: true
+  plot_roc_curve: true
+  plot_training_history: true
+  primary_metric: f1_score
+  save_best_model: true
+  save_final_test: true
+  save_per_epoch: false
+hardware:
+  auto_memory_management: true
+  cleanup_every_n_batches: 50
+  dataloader_workers: 4
+  dynamic_batch_size: true
+  force_gc_every_epoch: true
+  max_batch_size: 64
+  memory_threshold: 0.8
+  min_batch_size: 4
+  mixed_precision: false
+  pin_memory: true
+hyperparameter_tuning:
+  batch_sizes:
+  - 16
+  - 32
+  - 64
+  classifier_architectures:
+  - - 64
+    - 32
+  - - 128
+    - 64
+    - 32
+  - - 256
+    - 128
+    - 64
+  dropout_values:
+  - 0.1
+  - 0.2
+  - 0.3
+  - 0.4
+  - 0.5
+  embedding_dims:
+  - 64
+  - 128
+  - 256
+  enabled: false
+  grid_search_params:
+    dropout:
+    - 0.2
+    - 0.3
+    embedding_dim:
+    - 64
+    - 128
+    hidden_dim:
+    - 32
+    - 64
+    learning_rate:
+    - 0.001
+    - 0.01
+  hidden_dims:
+  - 32
+  - 64
+  - 128
+  - 256
+  learning_rates:
+  - 0.0001
+  - 0.001
+  - 0.01
+  method: optuna
+  n_random_samples: 50
+  n_trials: 100
+  num_layers_options:
+  - 1
+  - 2
+  - 3
+  optimizer_types:
+  - adam
+  - adamw
+  timeout: 7200
+  use_attention_options:
+  - true
+  - false
+  weight_decays:
+  - 1e-6
+  - 1e-5
+  - 1e-4
+model:
+  bidirectional: true
+  classifier_activation: relu
+  classifier_final_dropout: 0.3
+  classifier_hidden_layers:
+  - 128
+  - 64
+  - 32
+  classifier_use_batch_norm: true
+  dropout: 0.3
+  embedding_dim: 128
+  hidden_dim: 64
+  max_grad_norm: 1.0
+  num_layers: 2
+  use_attention: true
+  use_attention_pooling: true
+  use_batch_norm: true
+  use_gradient_clipping: true
+  use_last_hidden: true
+  use_max_pooling: true
+  use_mean_pooling: true
+paths:
+  best_model_file: best_model.pth
+  config_file: config.yaml
+  data_dir: data
+  logs_dir: logs
+  models_dir: models
+  plots_dir: plots
+  results_dir: results
+  study_file: optuna_study.db
+  tuning_results_dir: hyperparameter_tuning
+  vocabulary_file: vocabulary.pkl
+project:
+  author: AI Assistant
+  description: Sistema avanzato di sentiment analysis per tweet con architettura SOTA
+  name: tweet-sentiment-analysis
+  version: 2.0.0
+training:
+  adam_betas:
+  - 0.9
+  - 0.999
+  adam_eps: 1e-8
+  batch_size: 32
+  cosine_T_max: 100
+  cosine_eta_min: 1e-6
+  early_stopping_enabled: true
+  early_stopping_metric: f1_score
+  early_stopping_min_delta: 0.0001
+  early_stopping_patience: 50
+  gradient_accumulation_steps: 1
+  keep_last_n: 3
+  learning_rate: 0.001
+  num_epochs: 500
+  optimizer_type: adam
+  save_best: true
+  save_every_n_epochs: 25
+  scheduler_factor: 0.5
+  scheduler_min_lr: 1e-6
+  scheduler_mode: max
+  scheduler_patience: 25
+  scheduler_type: reduce_on_plateau
+  sgd_momentum: 0.9
+  sgd_nesterov: true
+  weight_decay: 1e-5

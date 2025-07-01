@@ -1,0 +1,15 @@
+{
+  "training_time": 104.38872957229614,
+  "total_params": 1166755,
+  "trainable_params": 1166755,
+  "vocab_size": 7677,
+  "final_epoch": 10,
+  "best_train_loss": 0.030936671837009485,
+  "best_val_loss": 0.04755353693296153,
+  "best_train_acc": 0.986984126984127,
+  "best_val_acc": 0.9794444444444445,
+  "best_val_f1": 0.9792437429702203,
+  "best_val_precision": 0.9797448309167893,
+  "best_val_recall": 0.9787930416068866,
+  "best_val_auc_roc": 0.998876633986928
+}

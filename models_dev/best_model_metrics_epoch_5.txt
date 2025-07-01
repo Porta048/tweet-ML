@@ -1,0 +1,28 @@
+SENTIMENT ANALYSIS - REPORT DETTAGLIATO
+Phase: Validation Epoch 5
+Data: 2025-07-01 12:32:56.865825
+==================================================
+
+METRICHE PRINCIPALI:
+Accuracy: 0.9433
+Precision (macro): 0.9429
+Recall (macro): 0.9467
+F1-Score (macro): 0.9432
+AUC-ROC: 0.9900
+AUC-PR: 0.9857
+
+METRICHE PER CLASSE:
+Negativo:
+  Precision: 0.9846
+  Recall: 0.9106
+  F1-Score: 0.9461
+Positivo:
+  Precision: 0.9011
+  Recall: 0.9828
+  F1-Score: 0.9402
+
+CONFUSION MATRIX:
+True Positives: 802
+True Negatives: 896
+False Positives: 88
+False Negatives: 14

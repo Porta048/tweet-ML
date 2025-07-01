@@ -1,0 +1,271 @@
+# =============================================================================
+# TWEET SENTIMENT ANALYSIS - CONFIGURAZIONE COMPLETA
+# =============================================================================
+
+# Informazioni generali del progetto
+project:
+  name: "tweet-sentiment-analysis"
+  version: "2.0.0"
+  description: "Sistema avanzato di sentiment analysis per tweet con architettura SOTA"
+  author: "AI Assistant"
+
+# Configurazione del dataset
+data:
+  max_samples: 20000                    # Numero massimo di campioni da generare
+  max_length: 100                       # Lunghezza massima delle sequenze
+  train_split: 0.7                      # Percentuale per training
+  val_split: 0.15                       # Percentuale per validation  
+  test_split: 0.15                      # Percentuale per test
+  min_vocab_freq: 2                     # Frequenza minima per includere parola nel vocabolario
+  vocab_size_limit: 20000               # Limite massimo dimensione vocabolario
+  
+  # Bilanciamento del dataset
+  balance_dataset: true                 # Se bilanciare le classi
+  positive_ratio: 0.5                   # Rapporto campioni positivi
+  
+  # Preprocessing
+  preprocessing:
+    remove_urls: true                   # Rimuovi URL
+    remove_mentions: false              # Mantieni @mentions per contesto
+    remove_hashtags: false              # Mantieni #hashtags per contesto
+    lowercase: true                     # Converti a minuscolo
+    remove_punctuation: false           # Mantieni punteggiatura per sentiment
+    remove_numbers: false               # Mantieni numeri
+    min_text_length: 3                  # Lunghezza minima del testo
+
+# Architettura del modello
+model:
+  # Parametri di base
+  embedding_dim: 128                    # Dimensione degli embeddings
+  hidden_dim: 64                        # Dimensione hidden states LSTM
+  num_layers: 2                         # Numero di layer LSTM
+  dropout: 0.3                          # Dropout rate
+  bidirectional: true                   # LSTM bidirezionale
+  
+  # Meccanismi avanzati
+  use_attention: true                   # Attention mechanism
+  use_batch_norm: true                  # Batch normalization
+  use_gradient_clipping: true           # Gradient clipping
+  max_grad_norm: 1.0                    # Norma massima dei gradienti
+  
+  # Architettura classificatore
+  classifier:
+    hidden_layers: [128, 64, 32]       # Dimensioni layer nascosti
+    activation: "relu"                  # Funzione di attivazione
+    use_batch_norm: true                # Batch norm nei layer classificatore
+    final_dropout: 0.3                  # Dropout finale
+  
+  # Pooling strategies
+  pooling:
+    use_max_pooling: true               # Max pooling
+    use_mean_pooling: true              # Mean pooling  
+    use_last_hidden: true               # Ultimo hidden state
+    use_attention_pooling: true         # Attention-based pooling
+
+# Parametri di training
+training:
+  # Iperparametri di base
+  num_epochs: 500                       # Numero massimo di epoche
+  batch_size: 32                        # Dimensione del batch
+  learning_rate: 0.001                  # Learning rate iniziale
+  weight_decay: 1e-5                    # L2 regularization
+  
+  # Gradient accumulation
+  gradient_accumulation_steps: 1        # Step per accumulo gradienti
+  
+  # Ottimizzatore
+  optimizer:
+    type: "adam"                        # Tipo di ottimizzatore (adam, sgd, adamw)
+    adam:
+      betas: [0.9, 0.999]              # Beta parameters per Adam
+      eps: 1e-8                         # Epsilon per stabilità numerica
+    sgd:
+      momentum: 0.9                     # Momentum per SGD
+      nesterov: true                    # Nesterov momentum
+  
+  # Learning rate scheduler
+  scheduler:
+    type: "reduce_on_plateau"           # Tipo di scheduler
+    reduce_on_plateau:
+      mode: "max"                       # Modalità (max per accuracy)
+      factor: 0.5                       # Fattore di riduzione
+      patience: 25                      # Epoche di pazienza
+      min_lr: 1e-6                      # LR minimo
+    cosine_annealing:
+      T_max: 100                        # Periodo del cosine annealing
+      eta_min: 1e-6                     # LR minimo
+  
+  # Early stopping
+  early_stopping:
+    enabled: true                       # Abilita early stopping
+    patience: 50                        # Epoche senza miglioramento
+    metric: "f1_score"                  # Metrica da monitorare (accuracy, f1_score, auc_roc)
+    min_delta: 0.0001                   # Miglioramento minimo
+  
+  # Checkpointing
+  checkpointing:
+    save_best: true                     # Salva il miglior modello
+    save_every_n_epochs: 25             # Salva checkpoint ogni N epoche
+    keep_last_n: 3                      # Mantieni ultimi N checkpoint
+
+# Configurazione hardware e memoria
+hardware:
+  # Gestione automatica memoria
+  auto_memory_management: true          # Ottimizzazione automatica parametri
+  memory_threshold: 0.8                 # Soglia di memoria disponibile da usare
+  
+  # Batch size dinamico
+  dynamic_batch_size: true              # Adatta batch size alla memoria
+  min_batch_size: 4                     # Batch size minimo
+  max_batch_size: 64                    # Batch size massimo
+  
+  # Ottimizzazioni
+  mixed_precision: false                # Mixed precision training (richiede GPU moderna)
+  dataloader_workers: 4                 # Worker per DataLoader
+  pin_memory: true                      # Pin memory su GPU
+  
+  # Memory cleanup
+  cleanup_every_n_batches: 50           # Pulizia memoria ogni N batch
+  force_gc_every_epoch: true            # Garbage collection ogni epoca
+
+# Metriche e valutazione
+evaluation:
+  # Metriche principali
+  primary_metric: "f1_score"            # Metrica principale per selezione modello
+  
+  # Metriche da calcolare
+  metrics:
+    accuracy: true                      # Accuratezza
+    precision: true                     # Precisione (macro e per classe)
+    recall: true                        # Recall (macro e per classe)
+    f1_score: true                      # F1-score (macro e per classe)
+    auc_roc: true                       # Area Under ROC Curve
+    auc_pr: true                        # Area Under PR Curve
+    confusion_matrix: true              # Matrice di confusione
+    sensitivity: true                   # Sensitivity (recall della classe positiva)
+    specificity: true                   # Specificity
+  
+  # Visualizzazioni
+  plots:
+    confusion_matrix: true              # Plot matrice confusione
+    roc_curve: true                     # Curva ROC
+    precision_recall_curve: true        # Curva Precision-Recall
+    training_history: true              # Storia del training
+    attention_visualization: true       # Visualizzazione attention weights
+  
+  # Report dettagliati
+  detailed_reports:
+    save_per_epoch: false               # Salva report ogni epoca
+    save_best_model: true               # Salva report miglior modello
+    save_final_test: true               # Salva report test finale
+
+# Hyperparameter tuning
+hyperparameter_tuning:
+  enabled: false                        # Abilita hyperparameter tuning
+  method: "optuna"                      # Metodo: grid_search, random_search, optuna
+  n_trials: 100                         # Numero di trial (per optuna/random)
+  timeout: 7200                         # Timeout in secondi (2 ore)
+  
+  # Spazio di ricerca per Optuna
+  search_space:
+    # Architettura
+    embedding_dim: [64, 128, 256]       # Dimensioni embedding da testare
+    hidden_dim: [32, 64, 128, 256]      # Dimensioni hidden da testare
+    num_layers: [1, 2, 3]               # Numero layer LSTM
+    dropout: [0.1, 0.2, 0.3, 0.4, 0.5] # Dropout rate
+    
+    # Training
+    learning_rate: [0.0001, 0.001, 0.01] # Learning rate
+    batch_size: [16, 32, 64]            # Batch size (se memoria sufficiente)
+    
+    # Ottimizzatore
+    optimizer_type: ["adam", "adamw"]    # Tipo ottimizzatore
+    weight_decay: [1e-6, 1e-5, 1e-4]    # Weight decay
+    
+    # Architettura avanzata
+    use_attention: [true, false]         # Con/senza attention
+    classifier_layers: [[64, 32], [128, 64, 32], [256, 128, 64]] # Architetture classificatore
+  
+  # Grid search (se method = "grid_search")
+  grid_search:
+    embedding_dim: [64, 128]
+    hidden_dim: [32, 64]
+    learning_rate: [0.001, 0.01]
+    dropout: [0.2, 0.3]
+  
+  # Random search (se method = "random_search")  
+  random_search:
+    n_random_samples: 50                # Numero di campioni casuali
+
+# Logging e monitoring
+logging:
+  level: "INFO"                         # Livello di logging
+  log_to_file: true                     # Salva log su file
+  log_file: "training.log"              # Nome file di log
+  log_metrics_every_n_epochs: 1        # Log metriche ogni N epoche
+  log_memory_usage: true                # Log uso memoria
+  
+  # Visualizzazioni live
+  use_tensorboard: false                # TensorBoard (se installato)
+  use_wandb: false                      # Weights & Biases (se installato)
+  plot_every_n_epochs: 10               # Plot ogni N epoche
+
+# Paths e file di output
+paths:
+  # Directory principali
+  data_dir: "data"                      # Directory dati
+  models_dir: "models"                  # Directory modelli
+  logs_dir: "logs"                      # Directory log
+  plots_dir: "plots"                    # Directory grafici
+  results_dir: "results"                # Directory risultati
+  
+  # File specifici
+  vocabulary_file: "vocabulary.pkl"     # File vocabolario
+  best_model_file: "best_model.pth"     # Miglior modello
+  config_file: "config.yaml"            # File configurazione
+  
+  # Hyperparameter tuning
+  tuning_results_dir: "hyperparameter_tuning"  # Directory risultati tuning
+  study_file: "optuna_study.db"         # Database Optuna
+
+# Test e predizioni  
+testing:
+  batch_size: 32                        # Batch size per test
+  save_predictions: true                # Salva predizioni
+  save_probabilities: true              # Salva probabilità
+  
+  # Test interattivo
+  interactive:
+    show_attention: true                # Mostra attention weights
+    show_confidence: true               # Mostra confidenza
+    show_preprocessing: true            # Mostra preprocessing steps
+  
+  # Test su esempi
+  example_tests:
+    enabled: true                       # Abilita test su esempi
+    save_results: true                  # Salva risultati esempi
+    
+  # Edge case testing
+  edge_case_testing:
+    enabled: true                       # Test casi edge
+    comprehensive: true                 # Test comprensivo
+    save_report: true                   # Salva report
+
+# Riproducibilità
+reproducibility:
+  seed: 42                              # Seed per riproducibilità
+  deterministic: true                   # Operazioni deterministiche
+  benchmark: false                      # CuDNN benchmark (disabilita per determinismo)
+
+# Debug e sviluppo
+debug:
+  enabled: false                        # Modalità debug
+  fast_dev_run: false                   # Run veloce per test (poche epoche/campioni)
+  save_intermediate_outputs: false     # Salva output intermedi
+  profiling: false                      # Profiling delle performance
+  
+  # Test rapido
+  fast_run:
+    max_samples: 1000                   # Campioni per test rapido
+    num_epochs: 5                       # Epoche per test rapido
+    batch_size: 16                      # Batch size per test rapido 

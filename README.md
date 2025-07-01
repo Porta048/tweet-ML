@@ -1,213 +1,153 @@
-# 🐦 Tweet Sentiment Analysis con Rete Neurale
+# Tweet Sentiment Analysis with Neural Networks
 
-Questo progetto implementa una rete neurale LSTM per l'analisi del sentiment dei tweet, classificandoli come **positivi** o **negativi**.
+This project implements an LSTM neural network for sentiment analysis of tweets, classifying them as **positive** or **negative**. It features a complete system for configuration, training, hyperparameter tuning, and deployment.
 
-## 🚀 Caratteristiche
+## Key Features
 
-- **Rete Neurale LSTM Bidirezionale** per catturare dipendenze a lungo termine nel testo
-- **Preprocessing automatico** dei tweet (rimozione URL, menzioni, emoji processing)
-- **Dataset puliti** utilizzando dataset pubblici di qualità
-- **Vocabolario dinamico** costruito automaticamente dai dati
-- **Visualizzazione dell'addestramento** con grafici di loss e accuracy
-- **Modalità di test interattiva** per testare nuovi tweet
-- **Supporto GPU** per addestramento accelerato
+- **Bidirectional LSTM Network**: Captures long-term dependencies in text for accurate sentiment analysis.
+- **External YAML Configuration**: All parameters are managed via `config.yaml` and `config_dev.yaml`, eliminating hardcoded values.
+- **Hyperparameter Tuning**: Integrated support for `Optuna`, `Grid Search`, and `Random Search` to find the best model parameters automatically.
+- **Hardware Auto-Optimization**: The system automatically adjusts batch size and other parameters based on available system memory (RAM).
+- **Professional CLI**: A user-friendly command-line interface built with `Rich` for running training, tuning, and validation.
+- **Automated Data Preprocessing**: Cleans and prepares tweet data, including URL removal, tokenization, and vocabulary creation.
+- **GPU Acceleration Support**: Automatically utilizes available GPUs for faster training.
 
-## 📋 Requisiti
+## Requirements
 
+To install the necessary dependencies, run:
 ```bash
 pip install -r requirements.txt
 ```
-
-### Dipendenze principali:
+Main dependencies include:
 - PyTorch (>= 2.0.0)
-- Transformers
-- Pandas, NumPy
-- Scikit-learn
-- NLTK
-- Matplotlib, Seaborn
+- Optuna
+- Rich
+- PyYAML
+- Pandas, NumPy, Scikit-learn
 
-## 🏗️ Struttura del Progetto
+## Project Structure
 
 ```
 tweet-ML/
-├── data_preparation.py      # Preprocessing e preparazione dati
-├── sentiment_model.py       # Architettura della rete neurale
-├── train_sentiment_model.py # Script di addestramento
-├── test_model.py           # Script per testare il modello
-├── requirements.txt        # Dipendenze
-├── README.md              # Questo file
-├── data/                  # Dataset processati (generato automaticamente)
-└── models/                # Modelli addestrati (generato automaticamente)
+├── config.yaml                     # Main production configuration
+├── config_dev.yaml                 # Development configuration for quick tests
+├── config_manager.py               # Manages loading and validation of configs
+├── run_hyperparameter_tuning.py    # Main entry point to run the system
+├── hyperparameter_tuning.py        # Implements tuning methods (Optuna, etc.)
+├── train_sentiment_model.py        # Core training loop logic
+├── sentiment_model.py              # Neural network architecture
+├── data_preparation.py             # Data loading and preprocessing scripts
+├── test_model.py                   # Script for evaluating the trained model
+├── requirements.txt                # Project dependencies
+├── README.md                       # This file
+├── data/                           # Processed datasets (auto-generated)
+└── models/                         # Trained models and vocabularies (auto-generated)
 ```
 
-## 🎯 Come Utilizzare
+## How to Use
 
-### 1. Installazione Dipendenze
-
+### 1. Installation
 ```bash
 pip install -r requirements.txt
 ```
 
-### 2. Addestramento del Modello
+### 2. Running the System
 
+The main entry point is `run_hyperparameter_tuning.py`, which supports several modes.
+
+#### Validate Configuration
+Check if your `config.yaml` is valid without running a full training session:
 ```bash
-python train_sentiment_model.py
+python run_hyperparameter_tuning.py --config config.yaml --validate
 ```
 
-Questo script:
-- Scarica e prepara un dataset pulito di tweet
-- Costruisce il vocabolario automaticamente
-- Addestra una rete LSTM bidirezionale
-- Salva il miglior modello e i grafici di addestramento
-
-**Parametri di default:**
-- 20.000 campioni di addestramento
-- 8 epochs
-- LSTM con 64 hidden units, 2 layers
-- Embedding dimension: 128
-- Dropout: 0.3
-
-### 3. Test del Modello
-
+#### Run a Single Training Session
+Train the model using the parameters defined in a configuration file (`config_dev.yaml` for a quick test):
 ```bash
-python test_model.py
+python run_hyperparameter_tuning.py --config config_dev.yaml --mode training
+```
+For a full training session using the production configuration:
+```bash
+python run_hyperparameter_tuning.py --config config.yaml --mode training
 ```
 
-Il script offre 3 modalità:
-
-1. **Test su esempi predefiniti**: Testa il modello su tweet di esempio
-2. **Modalità interattiva**: Inserisci tweet manualmente per testare
-3. **Analisi file CSV**: Analizza tweet da un file CSV
-
-## 🧠 Architettura della Rete Neurale
-
+#### Run Hyperparameter Tuning
+Start a hyperparameter tuning session using the method and search space defined in `config.yaml`:
+```bash
+python run_hyperparameter_tuning.py --config config.yaml --mode tuning --method optuna
 ```
-Input Tweet → Preprocessing → Tokenization → Embedding Layer
-                                                    ↓
-                                           LSTM Bidirezionale (2 layers)
-                                                    ↓
-                                           Fully Connected Layers
-                                                    ↓
-                                           Output: [Negativo, Positivo]
+You can specify the number of trials:
+```bash
+python run_hyperparameter_tuning.py --config config.yaml --mode tuning --method optuna --trials 50
 ```
 
-### Dettagli Tecnici:
-- **Embedding Layer**: Converte token in vettori densi (dim: 128)
-- **LSTM Bidirezionale**: Cattura dipendenze in entrambe le direzioni
-- **Dropout**: Previene overfitting (30%)
-- **Classificatore**: Tre layer fully connected con ReLU
-
-## 📊 Preprocessing dei Dati
-
-Il preprocessing include:
-
-1. **Conversione emoji** in testo descrittivo
-2. **Rimozione URL** e link
-3. **Pulizia menzioni** (@user) e hashtag
-4. **Rimozione caratteri speciali** e numeri
-5. **Tokenizzazione** e rimozione stopwords
-6. **Normalizzazione** (lowercase)
-
-## 🎮 Esempi di Utilizzo
-
-### Test Interattivo
+### 3. Testing the Model
+After a model is trained, you can test it using `test_model.py`:
 ```bash
 python test_model.py
-# Scegli opzione 2 per modalità interattiva
+```
+This script provides three modes:
+1.  **Test on predefined examples**: Runs inference on a sample set of tweets.
+2.  **Interactive mode**: Enter your own tweets to get sentiment predictions.
+3.  **CSV file analysis**: Provide a path to a CSV file to analyze a batch of tweets.
+
+
+## Neural Network Architecture
+
+```
+Input Tweet -> Preprocessing -> Tokenization -> Embedding Layer
+                                                    |
+                                           Bidirectional LSTM (2 layers)
+                                                    |
+                                                 Attention Mechanism
+                                                    |
+                                               Pooling Layers
+                                                    |
+                                           Fully Connected Classifier
+                                                    |
+                                           Output: [Negative, Positive]
 ```
 
-### Test su CSV
-```python
-# Prepara un CSV con colonna 'text' contenente i tweet
-# Esegui:
-python test_model.py
-# Scegli opzione 3 e inserisci il percorso del CSV
-```
+-   **Embedding Layer**: Converts input tokens into dense vectors.
+-   **Bidirectional LSTM**: Processes text in both forward and backward directions to capture context.
+-   **Attention Mechanism**: Allows the model to focus on the most relevant words for sentiment.
+-   **Classifier**: A series of fully connected layers with dropout for final classification.
 
-### Programmatico
-```python
-from test_model import TweetSentimentPredictor
+## Customization
 
-# Carica il predictor
-predictor = TweetSentimentPredictor()
+All aspects of the project are controlled via the `config.yaml` and `config_dev.yaml` files.
 
-# Predici un singolo tweet
-sentiment, confidence, clean_text = predictor.predict_single(
-    "I love this beautiful day! So happy! 😊"
-)
-print(f"Sentiment: {sentiment}, Confidence: {confidence:.4f}")
+### Modifying Model and Training Parameters
+Edit the `config.yaml` file to change any parameter, such as:
+-   `model.embedding_dim`, `model.hidden_dim`
+-   `training.num_epochs`, `training.learning_rate`, `training.batch_size`
+-   `hyperparameter_tuning.search_space`
 
-# Predici multipli tweet
-tweets = ["Great movie!", "Terrible service!"]
-results = predictor.predict_batch(tweets)
-print(results)
-```
+### Using Custom Datasets
+Modify the `data_preparation.py` script to load your own dataset. Ensure it is formatted with `text` and `sentiment` columns.
 
-## 📈 Risultati Attesi
+## Troubleshooting
 
-Con il dataset di default, il modello dovrebbe raggiungere:
-- **Accuracy di training**: ~85-90%
-- **Accuracy di validazione**: ~80-85%
-- **Accuracy di test**: ~80-85%
+### Insufficient Memory
+The system is designed to auto-optimize for available RAM. If you encounter memory issues, you can manually adjust these parameters in `config.yaml`:
+-   `training.batch_size` (e.g., from 32 to 16)
+-   `data.max_samples` (e.g., from 20000 to 10000)
+-   `model.hidden_dim` (e.g., from 128 to 64)
 
-I risultati vengono salvati in:
-- `models/best_model.pth`: Miglior modello addestrato
-- `models/vocabulary.pkl`: Vocabolario per preprocessing
-- `models/training_history.png`: Grafici di loss e accuracy
+### GPU Not Detected
+The model will fall back to CPU if a GPU is not available. To ensure PyTorch is installed with GPU support, follow the official instructions on the PyTorch website for your specific CUDA version.
 
-## 🔧 Personalizzazione
+## Datasets
 
-### Modificare i Parametri del Modello
+The project uses publicly available datasets, such as the **Emotion Dataset** from HuggingFace, which contains tweets labeled with various emotions. It also includes a synthetic dataset generator as a fallback for testing purposes.
 
-Edita i parametri in `train_sentiment_model.py`:
+## Contributing
 
-```python
-# Parametri modificabili
-MAX_SAMPLES = 50000      # Più dati = miglior performance
-NUM_EPOCHS = 15          # Più epochs = miglior addestramento
-EMBEDDING_DIM = 256      # Dimensione embedding
-HIDDEN_DIM = 128         # Dimensione hidden LSTM
-LEARNING_RATE = 0.0005   # Learning rate
-```
+1.  Fork the repository.
+2.  Create a new branch for your feature.
+3.  Commit your changes.
+4.  Push to your branch and open a Pull Request.
 
-### Utilizzare Dataset Personalizzati
+## License
 
-Modifica la funzione `prepare_dataset()` in `data_preparation.py` per caricare i tuoi dati.
-
-## 🛠️ Troubleshooting
-
-### Errore "Dataset non trovato"
-Il modello utilizza dataset pubblici. Se il download fallisce, verrà usato un dataset sintetico per testing.
-
-### Memoria insufficiente
-Riduci:
-- `BATCH_SIZE` (da 32 a 16)
-- `MAX_SAMPLES` (da 20000 a 10000)
-- `HIDDEN_DIM` (da 64 a 32)
-
-### GPU non rilevata
-Il modello funziona anche su CPU. Per usare GPU:
-```bash
-pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cu118
-```
-
-## 📚 Dataset Utilizzati
-
-Il progetto utilizza dataset pubblici come:
-- **Emotion Dataset** (HuggingFace): Tweet etichettati con emozioni
-- **Dataset sintetico** come fallback per testing
-
-## 🤝 Contributi
-
-1. Fork il repository
-2. Crea un branch per la tua feature
-3. Commit le modifiche
-4. Push e apri una Pull Request
-
-## 📄 Licenza
-
-Questo progetto è rilasciato sotto licenza MIT.
-
----
-
-**Buon addestramento! 🚀** 
+This project is released under the MIT License. 
