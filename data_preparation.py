@@ -25,7 +25,7 @@ class AdvancedTweetPreprocessor:
     """
     Esegue un preprocessing avanzato dei tweet, interpretando e normalizzando
     il linguaggio dei social media invece di rimuoverlo solamente.
-    Include anche capacità di data augmentation.
+    Include anche capacità di data augmentation avanzate.
     """
     def __init__(self):
         self.stop_words = set(stopwords.words('english'))
@@ -34,6 +34,56 @@ class AdvancedTweetPreprocessor:
                                            "didn't", "doesn't", "hadn't", "hasn't", "haven't", 
                                            "isn't", "mightn't", "mustn't", "needn't", "shan't", 
                                            "shouldn't", "wasn't", "weren't", "won't", "wouldn't"])
+        
+        # Dizionari per normalizzazione
+        self.contractions = {
+            "won't": "will not", "can't": "cannot", "n't": " not",
+            "'re": " are", "'ve": " have", "'ll": " will", "'d": " would",
+            "'m": " am", "it's": "it is", "that's": "that is",
+            "what's": "what is", "where's": "where is", "how's": "how is",
+            "there's": "there is", "here's": "here is"
+        }
+        
+        # Intensificatori e modificatori
+        self.intensifiers = {
+            "very": "<INTENSIFY>", "really": "<INTENSIFY>", "extremely": "<INTENSIFY>",
+            "absolutely": "<INTENSIFY>", "totally": "<INTENSIFY>", "completely": "<INTENSIFY>",
+            "quite": "<MODERATE>", "somewhat": "<MODERATE>", "fairly": "<MODERATE>",
+            "slightly": "<REDUCE>", "barely": "<REDUCE>", "hardly": "<REDUCE>"
+        }
+        
+        # Negazioni
+        self.negations = {
+            "not", "no", "never", "none", "nothing", "nobody", "nowhere",
+            "neither", "nor", "without", "against", "don't", "doesn't",
+            "didn't", "won't", "wouldn't", "can't", "cannot", "couldn't",
+            "shouldn't", "mustn't", "needn't", "shan't", "hasn't", "haven't",
+            "hadn't", "isn't", "aren't", "wasn't", "weren't"
+        }
+
+    def expand_contractions(self, text):
+        """Espande le contrazioni per una migliore comprensione"""
+        for contraction, expansion in self.contractions.items():
+            text = text.replace(contraction, expansion)
+        return text
+
+    def handle_negations(self, text):
+        """Gestisce le negazioni marcandole esplicitamente"""
+        tokens = text.split()
+        result = []
+        negate_next = False
+        
+        for i, token in enumerate(tokens):
+            if token.lower() in self.negations:
+                result.append("<NEG>")
+                negate_next = True
+            elif negate_next and token.isalpha():
+                result.append(f"<NEG_{token}>")
+                negate_next = False
+            else:
+                result.append(token)
+                
+        return " ".join(result)
 
     def clean_text(self, text):
         """
@@ -45,30 +95,42 @@ class AdvancedTweetPreprocessor:
         # 1. Conversione in minuscolo e gestione emoji
         text = emoji.demojize(str(text).lower(), delimiters=(" :", ": "))
 
-        # 2. Normalizzazione parole allungate (es. "soooooo" -> "so")
+        # 2. Espansione contrazioni
+        text = self.expand_contractions(text)
+
+        # 3. Normalizzazione parole allungate (es. "soooooo" -> "so")
         text = re.sub(r'(.)\1{2,}', r'\1', text)
 
-        # 3. Gestione punteggiatura ripetuta
-        text = re.sub(r'(\!){2,}', ' <repeated_exc> ', text)
-        text = re.sub(r'(\?){2,}', ' <repeated_qst> ', text)
+        # 4. Gestione punteggiatura ripetuta con sentiment preserving
+        text = re.sub(r'(\!){3,}', ' <VERY_EXCITED> ', text)
+        text = re.sub(r'(\!){2}', ' <EXCITED> ', text)
+        text = re.sub(r'(\?){3,}', ' <VERY_CONFUSED> ', text)
+        text = re.sub(r'(\?){2}', ' <CONFUSED> ', text)
 
-        # 4. Rimozione URL e link
+        # 5. Rimozione URL e link
         text = re.sub(r'http\S+|www\S+|https\S+', '', text, flags=re.MULTILINE)
         text = re.sub(r'bit\.ly/\S+', '', text)
 
-        # 5. Rimozione menzioni (@user)
-        text = re.sub(r'@\w+', '', text)
+        # 6. Rimozione menzioni (@user) ma mantieni il contesto
+        text = re.sub(r'@\w+', ' <MENTION> ', text)
         
-        # 6. Trasformazione hashtag in testo normale
+        # 7. Trasformazione hashtag in testo normale
         text = re.sub(r'#(\w+)', r'\1', text)
 
-        # 7. Rimuove caratteri non-alfanumerici (mantenendo gli spazi e i token speciali)
+        # 8. Gestione intensificatori
+        for intensifier, token in self.intensifiers.items():
+            text = re.sub(rf'\b{intensifier}\b', token, text)
+
+        # 9. Gestione negazioni avanzata
+        text = self.handle_negations(text)
+
+        # 10. Rimuove caratteri non-alfanumerici (mantenendo gli spazi e i token speciali)
         text = re.sub(r'[^a-zA-Z\s_<>]+', ' ', text)
 
-        # 8. Tokenizzazione
+        # 11. Tokenizzazione
         tokens = word_tokenize(text)
 
-        # 9. Filtro avanzato dei token
+        # 12. Filtro avanzato dei token
         cleaned_tokens = []
         for word in tokens:
             if (
@@ -78,14 +140,11 @@ class AdvancedTweetPreprocessor:
             ):
                 cleaned_tokens.append(word)
 
-        # 10. Rimuove spazi multipli e ricompone
+        # 13. Rimuove spazi multipli e ricompone
         return " ".join(cleaned_tokens).strip()
     
     def augment_text_random_deletion(self, text, p=0.1):
-        """
-        Applica la data augmentation tramite cancellazione casuale di parole.
-        'p' è la probabilità che una parola venga cancellata.
-        """
+        """Applica la data augmentation tramite cancellazione casuale di parole."""
         tokens = text.split()
         if len(tokens) <= 1:
             return text
@@ -93,39 +152,198 @@ class AdvancedTweetPreprocessor:
         remaining = [token for token in tokens if random.random() > p]
         
         if len(remaining) == 0:
-            return tokens[random.randint(0, len(tokens)-1)] # Ritorna una parola a caso se tutto viene cancellato
+            return tokens[random.randint(0, len(tokens)-1)]
             
         return ' '.join(remaining)
 
-    def prepare_and_augment_dataset(self, augment_minority=True, aug_factor=1):
-        """
-        Prepara il dataset usando dati pubblici, li pulisce con il metodo avanzato
-        e opzionalmente aumenta la classe minoritaria.
-        """
-        print("Caricamento del dataset 'emotion'...")
-        dataset = load_dataset("emotion")
+    def augment_text_synonym_replacement(self, text, n=1):
+        """Sostituisce n parole casuali con sinonimi semplici"""
+        synonyms_dict = {
+            'good': ['great', 'excellent', 'amazing', 'wonderful', 'fantastic'],
+            'bad': ['terrible', 'awful', 'horrible', 'dreadful', 'poor'],
+            'happy': ['joyful', 'cheerful', 'pleased', 'delighted', 'glad'],
+            'sad': ['unhappy', 'depressed', 'sorrowful', 'miserable', 'down'],
+            'love': ['adore', 'cherish', 'treasure', 'appreciate', 'enjoy'],
+            'hate': ['despise', 'loathe', 'detest', 'dislike', 'abhor'],
+            'nice': ['pleasant', 'lovely', 'beautiful', 'gorgeous', 'attractive'],
+            'ugly': ['hideous', 'unattractive', 'repulsive', 'gross', 'disgusting']
+        }
         
-        df = pd.concat([
-            pd.DataFrame(dataset['train']),
-            pd.DataFrame(dataset['test']),
-            pd.DataFrame(dataset['validation'])
-        ]).reset_index(drop=True)
+        tokens = text.split()
+        new_tokens = tokens.copy()
+        
+        replaceable_indices = [i for i, token in enumerate(tokens) 
+                              if token.lower() in synonyms_dict]
+        
+        if not replaceable_indices:
+            return text
+            
+        indices_to_replace = random.sample(replaceable_indices, 
+                                         min(n, len(replaceable_indices)))
+        
+        for idx in indices_to_replace:
+            word = tokens[idx].lower()
+            if word in synonyms_dict:
+                new_tokens[idx] = random.choice(synonyms_dict[word])
+                
+        return ' '.join(new_tokens)
 
-        # 0: sadness(0), anger(3), fear(4) -> NEGATIVO (0)
-        # 1: joy(1), love(2), surprise(5) -> POSITIVO (1)
-        positive_emotions = [1, 2, 5]
-        df['sentiment'] = df['label'].apply(lambda x: 1 if x in positive_emotions else 0)
+    def augment_text_random_insertion(self, text, n=1):
+        """Inserisce n parole casuali in posizioni casuali"""
+        tokens = text.split()
+        if len(tokens) < 2:
+            return text
+            
+        insert_words = ['really', 'very', 'quite', 'somewhat', 'totally', 'completely']
         
-        print("Pulizia del testo con AdvancedTweetPreprocessor...")
+        for _ in range(n):
+            insert_word = random.choice(insert_words)
+            insert_position = random.randint(0, len(tokens))
+            tokens.insert(insert_position, insert_word)
+            
+        return ' '.join(tokens)
+
+    def augment_text_random_swap(self, text, n=1):
+        """Scambia n coppie di parole adiacenti"""
+        tokens = text.split()
+        if len(tokens) < 2:
+            return text
+            
+        new_tokens = tokens.copy()
+        
+        for _ in range(n):
+            idx = random.randint(0, len(new_tokens) - 2)
+            new_tokens[idx], new_tokens[idx + 1] = new_tokens[idx + 1], new_tokens[idx]
+            
+        return ' '.join(new_tokens)
+
+    def augment_text_advanced(self, text, techniques=['deletion', 'synonym', 'insertion']):
+        """Applica tecniche di augmentation multiple in modo casuale"""
+        if not techniques:
+            return text
+            
+        technique = random.choice(techniques)
+        
+        if technique == 'deletion':
+            return self.augment_text_random_deletion(text, p=0.1)
+        elif technique == 'synonym':
+            return self.augment_text_synonym_replacement(text, n=1)
+        elif technique == 'insertion':
+            return self.augment_text_random_insertion(text, n=1)
+        elif technique == 'swap':
+            return self.augment_text_random_swap(text, n=1)
+        else:
+            return text
+
+    def load_multiple_datasets(self):
+        """Carica e combina multiple fonti di dataset per maggiore diversità"""
+        print("🔄 Caricamento di multiple fonti di dataset...")
+        datasets = []
+        
+        # 1. Dataset Emotion
+        try:
+            print("   📥 Caricando dataset 'emotion'...")
+            emotion_dataset = load_dataset("emotion")
+            emotion_df = pd.concat([
+                pd.DataFrame(emotion_dataset['train']),
+                pd.DataFrame(emotion_dataset['test']),
+                pd.DataFrame(emotion_dataset['validation'])
+            ]).reset_index(drop=True)
+            
+            # Mapping delle emozioni: 0-2-4 = negativo, 1-3-5 = positivo
+            positive_emotions = [1, 2, 5]  # joy, love, surprise
+            emotion_df['sentiment'] = emotion_df['label'].apply(
+                lambda x: 1 if x in positive_emotions else 0
+            )
+            emotion_df['source'] = 'emotion'
+            datasets.append(emotion_df[['text', 'sentiment', 'source']])
+            print(f"      ✅ Caricati {len(emotion_df)} campioni da 'emotion'")
+        except Exception as e:
+            print(f"      ❌ Errore nel caricare 'emotion': {e}")
+        
+        # 2. Dataset Tweet Eval (se disponibile)
+        try:
+            print("   📥 Caricando dataset 'tweet_eval' sentiment...")
+            tweet_eval = load_dataset("tweet_eval", "sentiment")
+            tweet_df = pd.concat([
+                pd.DataFrame(tweet_eval['train']),
+                pd.DataFrame(tweet_eval['test']),
+                pd.DataFrame(tweet_eval['validation'])
+            ]).reset_index(drop=True)
+            
+            # tweet_eval ha già sentiment 0,1,2 -> mappiamo a binario
+            tweet_df['sentiment'] = tweet_df['label'].apply(lambda x: 0 if x == 0 else 1)
+            tweet_df['source'] = 'tweet_eval'
+            datasets.append(tweet_df[['text', 'sentiment', 'source']])
+            print(f"      ✅ Caricati {len(tweet_df)} campioni da 'tweet_eval'")
+        except Exception as e:
+            print(f"      ⚠️ 'tweet_eval' non disponibile: {e}")
+        
+        # 3. Dataset IMDB (per varietà di linguaggio)
+        try:
+            print("   📥 Caricando campioni da 'imdb'...")
+            imdb_dataset = load_dataset("imdb")
+            # Prendiamo solo un subset per bilanciare
+            imdb_subset = pd.concat([
+                pd.DataFrame(imdb_dataset['train']).sample(n=5000, random_state=42),
+                pd.DataFrame(imdb_dataset['test']).sample(n=2000, random_state=42)
+            ]).reset_index(drop=True)
+            
+            imdb_subset['source'] = 'imdb'
+            # IMDB ha già sentiment 0,1
+            datasets.append(imdb_subset[['text', 'label', 'source']].rename(columns={'label': 'sentiment'}))
+            print(f"      ✅ Caricati {len(imdb_subset)} campioni da 'imdb'")
+        except Exception as e:
+            print(f"      ⚠️ 'imdb' non disponibile: {e}")
+        
+        if not datasets:
+            raise Exception("❌ Nessun dataset è stato caricato con successo!")
+        
+        # Combina tutti i dataset
+        combined_df = pd.concat(datasets, ignore_index=True)
+        
+        print(f"\n📊 Dataset combinato: {len(combined_df)} campioni totali")
+        print("   Distribuzione per fonte:")
+        print(combined_df['source'].value_counts())
+        print("   Distribuzione sentiment:")
+        print(combined_df['sentiment'].value_counts(normalize=True))
+        
+        return combined_df
+
+    def prepare_and_augment_dataset(self, augment_minority=True, aug_factor=2, use_multiple_sources=True):
+        """
+        Prepara il dataset usando multiple fonti, li pulisce con il metodo avanzato
+        e applica augmentation sofisticata.
+        """
+        if use_multiple_sources:
+            print("🔄 Preparazione dataset multi-fonte...")
+            df = self.load_multiple_datasets()
+        else:
+            print("🔄 Preparazione dataset singola fonte...")
+            dataset = load_dataset("emotion")
+            df = pd.concat([
+                pd.DataFrame(dataset['train']),
+                pd.DataFrame(dataset['test']),
+                pd.DataFrame(dataset['validation'])
+            ]).reset_index(drop=True)
+
+            positive_emotions = [1, 2, 5]
+            df['sentiment'] = df['label'].apply(lambda x: 1 if x in positive_emotions else 0)
+            df['source'] = 'emotion_only'
+        
+        print("\n🧹 Pulizia avanzata del testo...")
         df['text'] = df['text'].apply(self.clean_text)
         
-        df.drop(df[df.text == ''].index, inplace=True)
+        # Rimuovi testi vuoti
+        initial_count = len(df)
+        df = df[df['text'].str.len() > 0].reset_index(drop=True)
+        print(f"   Rimossi {initial_count - len(df)} testi vuoti")
         
-        print(f"Dataset pulito. Distribuzione classi prima dell'augmentation:")
+        print(f"\n📊 Dataset pulito. Distribuzione classi prima dell'augmentation:")
         print(df['sentiment'].value_counts(normalize=True))
 
         if augment_minority:
-            print("Avvio della data augmentation (Random Deletion) per la classe minoritaria...")
+            print(f"\n🔄 Avvio data augmentation avanzata (fattore: {aug_factor})...")
             
             sentiment_counts = df['sentiment'].value_counts()
             minority_class = sentiment_counts.idxmin()
@@ -137,22 +355,33 @@ class AdvancedTweetPreprocessor:
             if num_to_generate > 0:
                 minority_df = df[df['sentiment'] == minority_class]
                 
-                augmented_texts = []
+                augmented_data = []
                 samples_to_augment = minority_df.sample(n=num_to_generate, replace=True, random_state=42)
                 
-                for text in samples_to_augment['text']:
-                    augmented_texts.append({
-                        'text': self.augment_text_random_deletion(text, p=0.15),
+                print(f"   Generando {num_to_generate} nuovi campioni...")
+                
+                for _, row in samples_to_augment.iterrows():
+                    # Applica augmentation avanzata con tecniche multiple
+                    augmented_text = self.augment_text_advanced(
+                        row['text'], 
+                        techniques=['deletion', 'synonym', 'insertion', 'swap']
+                    )
+                    
+                    augmented_data.append({
+                        'text': augmented_text,
                         'sentiment': minority_class,
-                        'label': -1 
+                        'source': f"{row.get('source', 'unknown')}_augmented"
                     })
                 
-                augmented_df = pd.DataFrame(augmented_texts)
+                augmented_df = pd.DataFrame(augmented_data)
                 df = pd.concat([df, augmented_df], ignore_index=True)
                 
-                print(f"Generati {num_to_generate} nuovi campioni per la classe {minority_class}.")
-                print("Distribuzione classi dopo l'augmentation:")
+                print(f"   ✅ Generati {num_to_generate} nuovi campioni per la classe {minority_class}")
+                print(f"\n📊 Distribuzione finale:")
                 print(df['sentiment'].value_counts(normalize=True))
+                if 'source' in df.columns:
+                    print("\n   Distribuzione per fonte:")
+                    print(df['source'].value_counts())
 
         return df.sample(frac=1, random_state=42).reset_index(drop=True)
 

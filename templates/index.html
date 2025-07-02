@@ -3,293 +3,672 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Tweet Sentiment Analysis</title>
+    <meta name="description" content="Analyze the sentiment of your tweets with advanced artificial intelligence">
+    <meta name="author" content="Tweet ML Sentiment Analyzer">
+    <title>Tweet Sentiment Analysis - AI Powered</title>
+    
+    <!-- Preconnect for font optimization -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- Standard CSS -->
     <style>
-        * {
-            margin: 0;
-            padding: 0;
+        :root {
+            --primary-color: #2563eb;
+            --primary-hover: #1d4ed8;
+            --secondary-color: #64748b;
+            --success-color: #059669;
+            --error-color: #dc2626;
+            --warning-color: #d97706;
+            --background-color: #f8fafc;
+            --surface-color: #ffffff;
+            --text-primary: #1e293b;
+            --text-secondary: #64748b;
+            --border-color: #e2e8f0;
+            --border-focus: #3b82f6;
+            --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+            --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+            --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+            --border-radius: 0.5rem;
+            --border-radius-lg: 0.75rem;
+            --spacing-sm: 0.5rem;
+            --spacing-md: 1rem;
+            --spacing-lg: 1.5rem;
+            --spacing-xl: 2rem;
+        }
+        
+        /* Modern CSS Reset */
+        *, *::before, *::after {
             box-sizing: border-box;
         }
         
+        * {
+            margin: 0;
+            padding: 0;
+        }
+        
+        html {
+            scroll-behavior: smooth;
+            -webkit-text-size-adjust: 100%;
+        }
+        
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: var(--text-primary);
+            background-color: var(--background-color);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
+            padding: var(--spacing-md);
         }
         
+        /* Main Layout */
         .container {
-            background: white;
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
-            max-width: 600px;
-            width: 90%;
+            background: var(--surface-color);
+            border-radius: var(--border-radius-lg);
+            padding: var(--spacing-xl);
+            box-shadow: var(--shadow-lg);
+            max-width: 42rem;
+            width: 100%;
+            border: 1px solid var(--border-color);
         }
         
-        h1 {
+        .header {
             text-align: center;
-            color: #333;
-            margin-bottom: 30px;
-            font-size: 2.5em;
+            margin-bottom: var(--spacing-xl);
+        }
+        
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+            letter-spacing: -0.025em;
         }
         
         .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 40px;
-            font-size: 1.1em;
+            font-size: 1.125rem;
+            color: var(--text-secondary);
+            font-weight: 400;
         }
         
-        .input-group {
-            margin-bottom: 20px;
+        /* Form Styling */
+        .form-group {
+            margin-bottom: var(--spacing-lg);
         }
         
-        textarea {
+        .form-label {
+            display: block;
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .form-textarea {
             width: 100%;
-            padding: 15px;
-            border: 2px solid #e0e0e0;
-            border-radius: 10px;
-            font-size: 16px;
+            padding: 0.75rem;
+            border: 2px solid var(--border-color);
+            border-radius: var(--border-radius);
+            font-size: 1rem;
             font-family: inherit;
+            line-height: 1.5;
+            color: var(--text-primary);
+            background-color: var(--surface-color);
             resize: vertical;
             min-height: 120px;
-            transition: border-color 0.3s;
+            transition: border-color 0.2s ease, box-shadow 0.2s ease;
         }
         
-        textarea:focus {
+        .form-textarea:focus {
             outline: none;
-            border-color: #667eea;
+            border-color: var(--border-focus);
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
+        }
+        
+        .form-textarea:disabled {
+            background-color: #f1f5f9;
+            cursor: not-allowed;
+            opacity: 0.6;
         }
         
         .char-counter {
-            text-align: right;
-            color: #666;
-            font-size: 14px;
-            margin-top: 5px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: var(--spacing-sm);
+            font-size: 0.875rem;
+            color: var(--text-secondary);
         }
         
-        .analyze-btn {
-            width: 100%;
-            padding: 15px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
+        .char-count {
+            font-weight: 500;
+        }
+        
+        .char-count.warning {
+            color: var(--warning-color);
+        }
+        
+        .char-count.error {
+            color: var(--error-color);
+        }
+        
+        /* Button Styling */
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1;
             border: none;
-            border-radius: 10px;
-            font-size: 18px;
-            font-weight: bold;
+            border-radius: var(--border-radius);
             cursor: pointer;
-            transition: transform 0.2s;
+            transition: all 0.2s ease;
+            text-decoration: none;
+            font-family: inherit;
         }
         
-        .analyze-btn:hover {
-            transform: translateY(-2px);
+        .btn:focus {
+            outline: none;
+            box-shadow: 0 0 0 3px rgb(59 130 246 / 0.1);
         }
         
-        .analyze-btn:disabled {
-            opacity: 0.6;
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 0.75rem 1.5rem;
+            width: 100%;
+        }
+        
+        .btn-primary:hover:not(:disabled) {
+            background-color: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-md);
+        }
+        
+        .btn-primary:disabled {
+            background-color: var(--secondary-color);
             cursor: not-allowed;
             transform: none;
+            opacity: 0.6;
         }
         
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--text-secondary);
+            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            margin: 0.25rem;
+        }
+        
+        .btn-secondary:hover {
+            background-color: var(--background-color);
+            border-color: var(--primary-color);
+            color: var(--primary-color);
+        }
+        
+        /* Result Styling */
         .result {
-            margin-top: 30px;
-            padding: 20px;
-            border-radius: 10px;
+            margin-top: var(--spacing-xl);
+            padding: var(--spacing-lg);
+            border-radius: var(--border-radius);
+            border: 1px solid;
             display: none;
+            animation: fadeIn 0.3s ease;
         }
         
-        .result.positive {
-            background: #d4edda;
-            border: 2px solid #c3e6cb;
-            color: #155724;
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
         }
         
-        .result.negative {
-            background: #f8d7da;
-            border: 2px solid #f5c6cb;
-            color: #721c24;
+        .result.success {
+            background-color: #ecfdf5;
+            border-color: #10b981;
+            color: #065f46;
         }
         
         .result.error {
-            background: #fff3cd;
-            border: 2px solid #ffeaa7;
-            color: #856404;
+            background-color: #fef2f2;
+            border-color: #ef4444;
+            color: #991b1b;
         }
         
-        .sentiment-label {
-            font-size: 24px;
-            font-weight: bold;
-            margin-bottom: 10px;
+        .result.loading {
+            background-color: #eff6ff;
+            border-color: var(--primary-color);
+            color: var(--primary-color);
         }
         
-        .confidence {
-            font-size: 18px;
-            margin-bottom: 15px;
+        .result-header {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-sm);
         }
         
-        .details {
-            font-size: 14px;
-            color: #666;
+        .result-icon {
+            font-size: 1.5rem;
         }
         
-        .loading {
-            text-align: center;
-            color: #667eea;
-            font-style: italic;
+        .result-title {
+            font-size: 1.25rem;
+            font-weight: 600;
         }
         
+        .result-confidence {
+            font-size: 1rem;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .result-details {
+            font-size: 0.875rem;
+            opacity: 0.8;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: rgba(0,0,0,0.1);
+            border-radius: 4px;
+            overflow: hidden;
+            margin: var(--spacing-sm) 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background-color: currentColor;
+            transition: width 0.3s ease;
+        }
+        
+        /* Examples Section */
         .examples {
-            margin-top: 30px;
+            margin-top: var(--spacing-xl);
+            padding-top: var(--spacing-lg);
+            border-top: 1px solid var(--border-color);
+        }
+        
+        .examples-title {
+            font-size: 0.875rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            margin-bottom: var(--spacing-md);
             text-align: center;
         }
         
-        .example-btn {
-            background: #f8f9fa;
-            border: 1px solid #dee2e6;
-            color: #495057;
-            padding: 8px 16px;
-            margin: 5px;
-            border-radius: 20px;
-            cursor: pointer;
-            font-size: 14px;
-            transition: all 0.3s;
+        .examples-grid {
+            display: flex;
+            flex-wrap: wrap;
+            gap: var(--spacing-sm);
+            justify-content: center;
         }
         
-        .example-btn:hover {
-            background: #e9ecef;
-            transform: translateY(-1px);
+        /* Loading Spinner */
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            border-top: 2px solid currentColor;
+            animation: spin 1s linear infinite;
+            margin-right: var(--spacing-sm);
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 640px) {
+            .container {
+                padding: var(--spacing-lg);
+                margin: var(--spacing-sm);
+            }
+            
+            .title {
+                font-size: 1.5rem;
+            }
+            
+            .subtitle {
+                font-size: 1rem;
+            }
+            
+            .examples-grid {
+                flex-direction: column;
+            }
+            
+            .btn-secondary {
+                width: 100%;
+                margin: 0.25rem 0;
+            }
+        }
+        
+        /* Accessibility */
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+        
+        /* Print Styles */
+        @media print {
+            body {
+                background: white;
+            }
+            
+            .container {
+                box-shadow: none;
+                border: 1px solid #000;
+            }
+            
+            .btn, .examples {
+                display: none;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Tweet Sentiment Analyzer</h1>
-        <p class="subtitle">Enter a tweet to analyze its sentiment in real-time</p>
+    <main class="container" role="main">
+        <header class="header">
+            <h1 class="title">🤖 Tweet Sentiment Analysis</h1>
+            <p class="subtitle">Discover the sentiment of your tweets with advanced artificial intelligence</p>
+        </header>
         
-        <div class="input-group">
-            <textarea 
-                id="tweetText" 
-                placeholder="Type your tweet here... (e.g., 'I love this beautiful day!')"
-                maxlength="280"
-                oninput="updateCounter()"
-            ></textarea>
-            <div class="char-counter">
-                <span id="charCount">0</span>/280
+        <form id="sentimentForm" onsubmit="return false;" novalidate>
+            <div class="form-group">
+                <label for="tweetText" class="form-label">
+                    Enter your tweet
+                </label>
+                <textarea 
+                    id="tweetText" 
+                    class="form-textarea"
+                    placeholder="Write your tweet here... (e.g., 'I love this beautiful sunny day!')"
+                    maxlength="280"
+                    rows="4"
+                    aria-describedby="charCounter helpText"
+                    required
+                ></textarea>
+                <div class="char-counter" id="charCounter" aria-live="polite">
+                    <small id="helpText">Press Ctrl+Enter to analyze quickly</small>
+                    <span class="char-count" id="charCount">0/280</span>
+                </div>
             </div>
+            
+            <button type="submit" class="btn btn-primary" id="analyzeBtn" aria-describedby="buttonHelp">
+                <span id="buttonText">Analyze Sentiment</span>
+            </button>
+            <small id="buttonHelp" class="sr-only">Analyze the sentiment of the entered text</small>
+        </form>
+        
+        <div id="result" class="result" role="alert" aria-live="polite">
+            <!-- Results will be inserted here dynamically -->
         </div>
         
-        <button class="analyze-btn" onclick="analyzeSentiment()" id="analyzeBtn">
-            Analyze Sentiment
-        </button>
-        
-        <div id="result" class="result">
-            <div class="sentiment-label" id="sentimentLabel"></div>
-            <div class="confidence" id="confidenceText"></div>
-            <div class="details" id="detailsText"></div>
-        </div>
-        
-        <div class="examples">
-            <p style="color: #666; margin-bottom: 15px;">Try these examples:</p>
-            <button class="example-btn" onclick="setExample('I love this product! It works perfectly!')">Positive Example</button>
-            <button class="example-btn" onclick="setExample('This is terrible customer service. Very disappointed!')">Negative Example</button>
-            <button class="example-btn" onclick="setExample('The weather is okay today, nothing special.')">Neutral Example</button>
-        </div>
-    </div>
+        <section class="examples" aria-labelledby="examplesTitle">
+            <h2 id="examplesTitle" class="examples-title">✨ Try these examples</h2>
+            <div class="examples-grid">
+                <button type="button" class="btn btn-secondary" 
+                        onclick="setExample('What a beautiful day! I am so happy and full of energy! ☀️')"
+                        aria-label="Positive example">
+                    😊 Positive Example
+                </button>
+                <button type="button" class="btn btn-secondary" 
+                        onclick="setExample('What a terrible day, everything is going wrong and I am very disappointed 😞')"
+                        aria-label="Negative example">
+                    😔 Negative Example
+                </button>
+                <button type="button" class="btn btn-secondary" 
+                        onclick="setExample('Today I go to work as always, the weather is cloudy but okay')"
+                        aria-label="Neutral example">
+                    😐 Neutral Example
+                </button>
+            </div>
+        </section>
+    </main>
 
     <script>
-        function updateCounter() {
-            const textarea = document.getElementById('tweetText');
-            const counter = document.getElementById('charCount');
-            counter.textContent = textarea.value.length;
+        'use strict';
+        
+        // Configuration
+        const CONFIG = {
+            maxLength: 280,
+            warningThreshold: 250,
+            apiEndpoint: '/predict',
+            autoAnalyzeDelay: 800
+        };
+        
+        // DOM Elements
+        const elements = {
+            form: document.getElementById('sentimentForm'),
+            textarea: document.getElementById('tweetText'),
+            charCount: document.getElementById('charCount'),
+            analyzeBtn: document.getElementById('analyzeBtn'),
+            buttonText: document.getElementById('buttonText'),
+            result: document.getElementById('result')
+        };
+        
+        // Application State
+        let isAnalyzing = false;
+        let autoAnalyzeTimer = null;
+        
+        // Event Listeners
+        function initializeEventListeners() {
+            elements.form.addEventListener('submit', handleSubmit);
+            elements.textarea.addEventListener('input', handleTextareaInput);
+            elements.textarea.addEventListener('keydown', handleKeydown);
+            elements.analyzeBtn.addEventListener('click', analyzeSentiment);
+            
+            // Initialize counter
+            updateCharCounter();
+        }
+        
+        function handleSubmit(event) {
+            event.preventDefault();
+            analyzeSentiment();
+        }
+        
+        function handleTextareaInput() {
+            updateCharCounter();
+            
+            // Auto-analyze with debounce
+            clearTimeout(autoAnalyzeTimer);
+            if (elements.textarea.value.trim()) {
+                autoAnalyzeTimer = setTimeout(() => {
+                    if (!isAnalyzing && elements.textarea.value.trim()) {
+                        analyzeSentiment();
+                    }
+                }, CONFIG.autoAnalyzeDelay);
+            }
+        }
+        
+        function handleKeydown(event) {
+            if (event.ctrlKey && event.key === 'Enter') {
+                event.preventDefault();
+                analyzeSentiment();
+            }
+        }
+        
+        // Main Functions
+        function updateCharCounter() {
+            const length = elements.textarea.value.length;
+            const remaining = CONFIG.maxLength - length;
+            
+            elements.charCount.textContent = `${length}/${CONFIG.maxLength}`;
+            
+            // Update style based on length
+            elements.charCount.className = 'char-count';
+            if (length >= CONFIG.maxLength) {
+                elements.charCount.classList.add('error');
+            } else if (length >= CONFIG.warningThreshold) {
+                elements.charCount.classList.add('warning');
+            }
+            
+            // Update accessibility
+            elements.charCount.setAttribute('aria-label', 
+                `${length} characters of ${CONFIG.maxLength}, ${remaining} remaining`);
         }
         
         function setExample(text) {
-            const textarea = document.getElementById('tweetText');
-            textarea.value = text;
-            updateCounter();
-            // Auto-analyze after setting example
+            elements.textarea.value = text;
+            elements.textarea.focus();
+            updateCharCounter();
+            
+            // Analyze automatically after a short delay
             setTimeout(() => analyzeSentiment(), 500);
         }
         
         async function analyzeSentiment() {
-            const tweetText = document.getElementById('tweetText').value.trim();
-            const resultDiv = document.getElementById('result');
-            const analyzeBtn = document.getElementById('analyzeBtn');
+            const text = elements.textarea.value.trim();
             
-            if (!tweetText) {
-                alert('Please enter some text to analyze!');
+            if (!text) {
+                showError('Please enter some text to analyze');
+                elements.textarea.focus();
                 return;
             }
             
-            // Show loading state
-            analyzeBtn.disabled = true;
-            analyzeBtn.textContent = 'Analyzing...';
-            resultDiv.style.display = 'block';
-            resultDiv.className = 'result';
-            resultDiv.innerHTML = '<div class="loading">Analyzing sentiment...</div>';
+            if (text.length > CONFIG.maxLength) {
+                showError(`Text is too long. Maximum ${CONFIG.maxLength} characters.`);
+                return;
+            }
+            
+            if (isAnalyzing) return;
             
             try {
-                const response = await fetch('/predict', {
+                setLoadingState(true);
+                showLoadingResult();
+                
+                const response = await fetch(CONFIG.apiEndpoint, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
+                        'Accept': 'application/json'
                     },
-                    body: JSON.stringify({ text: tweetText })
+                    body: JSON.stringify({ text })
                 });
+                
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
                 
                 const data = await response.json();
                 
                 if (data.error) {
-                    showResult('error', 'Error', data.error, '');
-                } else {
-                    const sentiment = data.sentiment;
-                    const confidence = data.confidence;
-                    const probabilities = data.probabilities;
-                    
-                    const confidenceText = `Confidence: ${confidence}%`;
-                    const detailsText = `Positive: ${probabilities.positive}% | Negative: ${probabilities.negative}%`;
-                    
-                    showResult(
-                        sentiment.toLowerCase(), 
-                        sentiment, 
-                        confidenceText, 
-                        detailsText
-                    );
+                    throw new Error(data.error);
                 }
                 
+                showSuccessResult(data);
+                
             } catch (error) {
-                showResult('error', 'Connection Error', 'Failed to connect to the server', '');
+                console.error('Error during analysis:', error);
+                showError(getErrorMessage(error));
+            } finally {
+                setLoadingState(false);
             }
-            
-            // Reset button
-            analyzeBtn.disabled = false;
-            analyzeBtn.textContent = 'Analyze Sentiment';
         }
         
-        function showResult(type, sentiment, confidence, details) {
-            const resultDiv = document.getElementById('result');
-            const sentimentLabel = document.getElementById('sentimentLabel');
-            const confidenceText = document.getElementById('confidenceText');
-            const detailsText = document.getElementById('detailsText');
+        function setLoadingState(loading) {
+            isAnalyzing = loading;
+            elements.analyzeBtn.disabled = loading;
+            elements.textarea.disabled = loading;
             
-            resultDiv.className = `result ${type}`;
-            resultDiv.style.display = 'block';
-            
-            resultDiv.innerHTML = `
-                <div class="sentiment-label">${sentiment}</div>
-                <div class="confidence">${confidence}</div>
-                <div class="details">${details}</div>
+            if (loading) {
+                elements.buttonText.innerHTML = '<span class="spinner"></span>Analyzing...';
+                elements.analyzeBtn.setAttribute('aria-label', 'Analysis in progress...');
+            } else {
+                elements.buttonText.textContent = 'Analyze Sentiment';
+                elements.analyzeBtn.setAttribute('aria-label', 'Analyze text sentiment');
+            }
+        }
+        
+        function showLoadingResult() {
+            elements.result.className = 'result loading';
+            elements.result.style.display = 'block';
+            elements.result.innerHTML = `
+                <div class="result-header">
+                    <div class="result-icon"><span class="spinner"></span></div>
+                    <div class="result-title">Analysis in progress...</div>
+                </div>
+                <div class="result-details">The AI model is processing your text</div>
             `;
         }
         
-        // Allow Enter+Ctrl to submit
-        document.getElementById('tweetText').addEventListener('keydown', function(e) {
-            if (e.ctrlKey && e.key === 'Enter') {
-                analyzeSentiment();
+        function showSuccessResult(data) {
+            const { sentiment, confidence, probabilities } = data;
+            const isPositive = sentiment.toLowerCase().includes('positiv');
+            
+            const icon = isPositive ? '😊' : '😔';
+            const emoji = isPositive ? '🟢' : '🔴';
+            
+            elements.result.className = 'result success';
+            elements.result.style.display = 'block';
+            elements.result.innerHTML = `
+                <div class="result-header">
+                    <div class="result-icon">${icon}</div>
+                    <div class="result-title">${emoji} Sentiment: ${sentiment}</div>
+                </div>
+                <div class="result-confidence">
+                    Confidence: ${confidence}%
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${confidence}%"></div>
+                    </div>
+                </div>
+                <div class="result-details">
+                    Details: Positive ${probabilities.positive}% | Negative ${probabilities.negative}%
+                </div>
+            `;
+        }
+        
+        function showError(message) {
+            elements.result.className = 'result error';
+            elements.result.style.display = 'block';
+            elements.result.innerHTML = `
+                <div class="result-header">
+                    <div class="result-icon">⚠️</div>
+                    <div class="result-title">Error</div>
+                </div>
+                <div class="result-details">${message}</div>
+            `;
+        }
+        
+        function getErrorMessage(error) {
+            if (error.message.includes('fetch')) {
+                return 'Connection error. Please check your internet connection.';
             }
+            if (error.message.includes('500')) {
+                return 'Server error. Please try again in a moment.';
+            }
+            if (error.message.includes('404')) {
+                return 'Service unavailable. Please contact the administrator.';
+            }
+            return error.message || 'An unexpected error occurred.';
+        }
+        
+        // Initialization
+        document.addEventListener('DOMContentLoaded', initializeEventListeners);
+        
+        // Performance and accessibility
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => {
+                // Service worker can be added here in the future
+            });
+        }
+        
+        // Global error handling
+        window.addEventListener('error', (event) => {
+            console.error('JavaScript error:', event.error);
+        });
+        
+        window.addEventListener('unhandledrejection', (event) => {
+            console.error('Promise rejected:', event.reason);
         });
     </script>
 </body>

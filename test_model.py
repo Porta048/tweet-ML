@@ -1,6 +1,6 @@
 import torch
 import pandas as pd
-from data_preparation import TweetPreprocessor
+from data_preparation import AdvancedTweetPreprocessor
 from sentiment_model import SentimentLSTM, SentimentTrainer, load_vocabulary
 import os
 import sys
@@ -155,7 +155,7 @@ class TweetSentimentPredictor:
             
             # 4. Inizializza preprocessor
             try:
-                self.preprocessor = TweetPreprocessor()
+                self.preprocessor = AdvancedTweetPreprocessor()
                 logger.info("✅ Preprocessor inizializzato")
             except Exception as e:
                 logger.error(f"❌ Errore inizializzazione preprocessor: {e}")
@@ -193,27 +193,33 @@ class TweetSentimentPredictor:
                 embedding_dim = state_dict['embedding.weight'].shape[1]
                 hidden_dim = state_dict['lstm.weight_ih_l0'].shape[0] // 4  # LSTM ha 4 gates
                 
-                # Determina se ha attention
+                # Determina caratteristiche architettura avanzata
                 has_attention = any('attention' in key for key in state_dict.keys())
+                has_self_attention = any('self_attention' in key for key in state_dict.keys())
+                has_residual = any('self_attn_norm' in key or 'ff_norm' in key for key in state_dict.keys())
                 
                 # Conta layers LSTM
                 lstm_layers = max([int(key.split('_l')[1].split('_')[0]) for key in state_dict.keys() 
                                  if 'lstm.weight_ih_l' in key]) + 1
                 
-                logger.info(f"📋 Architettura rilevata:")
+                logger.info(f"📋 Architettura AVANZATA rilevata:")
                 logger.info(f"   - Embedding: {embedding_dim}")
                 logger.info(f"   - Hidden: {hidden_dim}")
                 logger.info(f"   - LSTM Layers: {lstm_layers}")
                 logger.info(f"   - Attention: {has_attention}")
+                logger.info(f"   - Self-Attention: {has_self_attention}")
+                logger.info(f"   - Residual Connections: {has_residual}")
                 
-                # Crea modello con architettura corretta
+                # Crea modello con architettura avanzata corretta
                 self.model = SentimentLSTM(
                     vocab_size=vocab_size,
                     embedding_dim=embedding_dim,
                     hidden_dim=hidden_dim,
                     num_layers=lstm_layers,
                     dropout=0.3,
-                    use_attention=has_attention
+                    use_attention=has_attention,
+                    use_self_attention=has_self_attention,
+                    use_residual=has_residual
                 )
                 
                 # Carica pesi

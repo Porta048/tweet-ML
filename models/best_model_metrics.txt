@@ -1,0 +1,28 @@
+SENTIMENT ANALYSIS - REPORT DETTAGLIATO
+Phase: Best Model - Epoch 45
+Data: 2025-07-02 08:54:21.665876
+==================================================
+
+METRICHE PRINCIPALI:
+Accuracy: 0.9779
+Precision (macro): 0.9779
+Recall (macro): 0.9779
+F1-Score (macro): 0.9779
+AUC-ROC: 0.9975
+AUC-PR: 0.9975
+
+METRICHE PER CLASSE:
+Negativo:
+  Precision: 0.9762
+  Recall: 0.9798
+  F1-Score: 0.9780
+Positivo:
+  Precision: 0.9797
+  Recall: 0.9761
+  F1-Score: 0.9779
+
+CONFUSION MATRIX:
+True Positives: 1062
+True Negatives: 1066
+False Positives: 22
+False Negatives: 26

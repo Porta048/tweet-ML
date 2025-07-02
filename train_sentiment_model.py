@@ -5,6 +5,7 @@ from torch.utils.data import DataLoader
 import matplotlib.pyplot as plt
 import seaborn as sns
 from sentiment_model import SentimentLSTM, SentimentTrainer, TweetDataset, save_vocabulary
+from data_preparation import AdvancedTweetPreprocessor
 import os
 import torch.nn as nn
 import gc
@@ -143,8 +144,7 @@ def evaluate_model(trainer, test_loader, vocab_to_idx, best_model_path='models/b
     
     for i, text in enumerate(test_texts, 1):
         # Preprocessing del testo
-        from data_preparation import TweetPreprocessor
-        preprocessor = TweetPreprocessor()
+        preprocessor = AdvancedTweetPreprocessor()
         clean_text = preprocessor.clean_text(text)
         
         sentiment, confidence = trainer.predict(clean_text, vocab_to_idx)
@@ -354,9 +354,20 @@ def train_model_with_config(config: 'ConfigManager') -> dict:
             X_test, y_test = test_df['text'], test_df['sentiment']
         else:
             print("Preparazione nuovi dati...")
-            preprocessor = TweetPreprocessor()
-            df = preprocessor.prepare_dataset(max_samples=MAX_SAMPLES)
-            X_train, X_val, X_test, y_train, y_val, y_test = preprocessor.split_data(df)
+            preprocessor = AdvancedTweetPreprocessor()
+            df = preprocessor.prepare_and_augment_dataset(augment_minority=True)
+            # Usa la funzione split_data indipendente
+            from data_preparation import split_data
+            split_data(df)
+            
+            # Ricarica i dati divisi
+            train_df = pd.read_csv(train_csv)
+            val_df = pd.read_csv(val_csv) 
+            test_df = pd.read_csv(test_csv)
+            
+            X_train, y_train = train_df['text'], train_df['sentiment']
+            X_val, y_val = val_df['text'], val_df['sentiment']
+            X_test, y_test = test_df['text'], test_df['sentiment']
             
             # Salva i dati nelle directory configurate
             pd.DataFrame({'text': X_train, 'sentiment': y_train}).to_csv(train_csv, index=False)
@@ -610,9 +621,23 @@ def main():
         X_test, y_test = test_df['text'], test_df['sentiment']
     else:
         print("Preparazione nuovi dati...")
-        preprocessor = TweetPreprocessor()
-        df = preprocessor.prepare_dataset(max_samples=MAX_SAMPLES)
-        X_train, X_val, X_test, y_train, y_val, y_test = preprocessor.split_data(df)
+        preprocessor = AdvancedTweetPreprocessor()
+        df = preprocessor.prepare_and_augment_dataset(augment_minority=True)
+        # Limita il numero di campioni se specificato
+        if MAX_SAMPLES and len(df) > MAX_SAMPLES:
+            df = df.sample(n=MAX_SAMPLES, random_state=42).reset_index(drop=True)
+        # Usa la funzione split_data indipendente
+        from data_preparation import split_data
+        split_data(df)
+        
+        # Ricarica i dati divisi
+        train_df = pd.read_csv('data/train.csv')
+        val_df = pd.read_csv('data/val.csv')
+        test_df = pd.read_csv('data/test.csv')
+        
+        X_train, y_train = train_df['text'], train_df['sentiment']
+        X_val, y_val = val_df['text'], val_df['sentiment']
+        X_test, y_test = test_df['text'], test_df['sentiment']
         
         # Salva i dati
         os.makedirs('data', exist_ok=True)
@@ -640,36 +665,46 @@ def main():
     # Salva il vocabolario
     save_vocabulary(vocab_to_idx, idx_to_vocab)
     
-    # 3. Creazione del modello definitivo
-    print("\n3. CREAZIONE MODELLO")
+    # 3. Creazione del modello avanzato definitivo
+    print("\n3. CREAZIONE MODELLO AVANZATO")
     print("-" * 30)
     
     vocab_size = len(vocab_to_idx)
+    
+    # Crea modello con architettura avanzata
     model = SentimentLSTM(
         vocab_size=vocab_size,
         embedding_dim=EMBEDDING_DIM,
         hidden_dim=HIDDEN_DIM,
         num_layers=NUM_LAYERS,
         dropout=DROPOUT,
-        use_attention=USE_ATTENTION
+        use_attention=USE_ATTENTION,        # Attention classico
+        use_self_attention=True,            # Self-attention (Transformer-like)
+        use_residual=True                   # Residual connections
     )
     
     trainer = SentimentTrainer(model, device)
     
-    print(f"Modello creato:")
+    print(f"Modello AVANZATO creato:")
     print(f"- Vocab size: {vocab_size}")
     print(f"- Embedding dim: {EMBEDDING_DIM}")
     print(f"- Hidden dim: {HIDDEN_DIM}")
     print(f"- Num layers: {NUM_LAYERS}")
     print(f"- Dropout: {DROPOUT}")
     print(f"- Attention mechanism: {USE_ATTENTION}")
-    print(f"- Architettura: LSTM bidirezionale + Attention + Pooling")
+    print(f"- Self-Attention (Transformer): ✅")
+    print(f"- Residual Connections: ✅")
+    print(f"- Positional Encoding: ✅")
+    print(f"- Multi-Head Self-Attention: ✅")
+    print(f"- Layer Normalization: ✅")
+    print(f"- Architettura: LSTM + Self-Attention + Residual + Multi-Pooling")
     
     # Conta i parametri
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"- Parametri totali: {total_params:,}")
     print(f"- Parametri addestrabili: {trainable_params:,}")
+    print(f"- Memoria modello stimata: {total_params * 4 / 1024**2:.1f} MB")
     
     # 4. Creazione dataset e dataloader
     print("\n4. CREAZIONE DATALOADER")
@@ -688,18 +723,42 @@ def main():
     print(f"- Val batches: {len(val_loader)}")
     print(f"- Test batches: {len(test_loader)}")
     
-    # 5. Addestramento
-    print("\n5. ADDESTRAMENTO")
+    # 5. Addestramento Avanzato
+    print("\n5. ADDESTRAMENTO AVANZATO")
     print("-" * 30)
     
     os.makedirs('models', exist_ok=True)
+    
+    # Calcola i pesi delle classi per gestire sbilanciamento
+    class_weights = calculate_class_weights('data/train.csv')
+    
+    # Determina se usare Focal Loss per dataset sbilanciati
+    use_focal_loss = False
+    if class_weights is not None:
+        weight_ratio = max(class_weights) / min(class_weights)
+        use_focal_loss = weight_ratio > 1.5
+        print(f"📊 Rapporto sbilanciamento classi: {weight_ratio:.2f}")
+        print(f"📊 Uso Focal Loss: {'✅' if use_focal_loss else '❌'}")
+    
+    print(f"🚀 FUNZIONALITÀ AVANZATE ATTIVATE:")
+    print(f"   - Warmup Learning Rate: ✅")
+    print(f"   - Cosine Annealing: ✅")
+    print(f"   - Gradient Clipping: ✅")
+    print(f"   - Class Weights: {'✅' if class_weights is not None else '❌'}")
+    print(f"   - Focal Loss: {'✅' if use_focal_loss else '❌'}")
+    print(f"   - Early Stopping Avanzato: ✅")
+    print(f"   - Checkpoint Intermedi: ✅")
     
     history = trainer.train(
         train_loader=train_loader,
         val_loader=val_loader,
         num_epochs=NUM_EPOCHS,
         learning_rate=LEARNING_RATE,
-        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS
+        gradient_accumulation_steps=GRADIENT_ACCUMULATION_STEPS,
+        use_focal_loss=use_focal_loss,
+        class_weights=class_weights,
+        use_warmup=True,
+        cosine_annealing=True
     )
     
     # 6. Visualizzazione risultati
@@ -709,49 +768,73 @@ def main():
     plot_training_history(history)
     
     # 7. Valutazione finale
-    evaluate_model(trainer, test_loader, vocab_to_idx, 'models/best_model.pth')
+    final_metrics = evaluate_model(trainer, test_loader, vocab_to_idx, 'models/best_model.pth')
+    
+    # 8. Test di esempi complessi per verificare le capacità avanzate
+    print("\n8. TEST CAPACITÀ AVANZATE")
+    print("-" * 30)
+    
+    challenging_examples = [
+        "This is not bad at all, quite good actually",  # Negazione + positivo
+        "I love this movie but the ending was terrible",  # Sentimenti misti
+        "Absolutely fantastic amazing wonderful",  # Intensificatori multipli
+        "Worst experience ever, completely disappointed",  # Negativo forte
+        "Okay I guess, nothing special though",  # Neutro/negativo debole
+        "Best day of my life!! So happy!!! 😊",  # Positivo forte con emoji
+        "I don't hate it but it's not great either",  # Doppia negazione
+        "Could be better but not the worst",  # Comparativi
+    ]
+    
+    print("🧪 Testando capacità di comprensione avanzata...")
+    
+    # Preprocessing per i test
+    preprocessor = AdvancedTweetPreprocessor()
+    
+    for i, text in enumerate(challenging_examples, 1):
+        # Preprocessa il testo con il nostro sistema avanzato
+        clean_text = preprocessor.clean_text(text)
+        sentiment, confidence = trainer.predict(clean_text, vocab_to_idx)
+        
+        emoji = "😊" if sentiment == "Positivo" else "😔"
+        confidence_level = "🔥" if confidence > 0.8 else "👍" if confidence > 0.6 else "🤔"
+        
+        print(f"{i}. {emoji} '{text}'")
+        print(f"   Pulito: '{clean_text}'")
+        print(f"   Predizione: {sentiment} {confidence_level} (Conf: {confidence:.4f})")
     
     print("\n" + "="*60)
-    print("ADDESTRAMENTO COMPLETATO!")
+    print("🚀 ADDESTRAMENTO AVANZATO COMPLETATO CON SUCCESSO!")
     print("="*60)
-    print("File salvati:")
-    print("- models/best_model.pth: Miglior modello")
-    print("- models/vocabulary.pkl: Vocabolario")
-    print("- models/training_history.png: Grafici addestramento")
-    print("- data/: Dataset processati")
-
-    # Lancia il processo di training con la configurazione caricata
-    results = train_model_with_config(config)
-
-    # Al termine, esegui la valutazione finale se ha prodotto un modello
-    if results and results.get('best_model_path'):
-        print("\n" + "="*60)
-        print("🚀 FASE FINALE: VALUTAZIONE DEL MODELLO ADDESTRATO")
-        print("="*60)
-        
-        # Ricarica le componenti necessarie per la valutazione indipendente
-        # Questo assicura che la valutazione possa essere eseguita anche separatamente
-        
-        # Carica il vocabolario salvato
-        with open(results['vocabulary_path'], 'rb') as f:
-            vocab_data = torch.load(f)
-            vocab_to_idx = vocab_data['vocab_to_idx']
-        
-        # Crea un dataloader per il test
-        test_dataset = TweetDataset(pd.read_csv(config.data.test_path), vocab_to_idx, config.data.max_length)
-        test_loader = DataLoader(test_dataset, batch_size=config.data.batch_size, shuffle=False, num_workers=config.hardware.num_workers)
-        
-        # Ricrea il modello e il trainer per la valutazione
-        # (Questo è necessario per caricare lo stato e usare il metodo `predict`)
-        model = SentimentLSTM(vocab_size=len(vocab_to_idx), embedding_dim=config.model.embedding_dim, hidden_dim=config.model.hidden_dim, num_layers=config.model.num_layers, dropout=config.model.dropout, use_attention=config.model.use_attention, pooling_methods=config.model.pooling_methods, bidirectional=config.model.bidirectional)
-        optimizer = torch.optim.Adam(model.parameters(), lr=config.training.learning_rate)
-        criterion = nn.CrossEntropyLoss()
-        device = torch.device(config.hardware.device)
-        model.to(device)
-        
-        trainer = SentimentTrainer(model, optimizer, criterion, None, device, config)
-        
-        evaluate_model(trainer, test_loader, vocab_to_idx, results['best_model_path'])
+    print("📊 RISULTATI FINALI:")
+    print(f"   🎯 Accuratezza Test: {final_metrics['accuracy']:.4f} ({final_metrics['accuracy']*100:.2f}%)")
+    print(f"   🎯 F1-Score Test: {final_metrics['f1_macro']:.4f}")
+    if final_metrics.get('auc_roc'):
+        print(f"   🎯 AUC-ROC Test: {final_metrics['auc_roc']:.4f}")
+    
+    print("\n📁 FILE SALVATI:")
+    print("   ✅ models/best_model.pth - Miglior modello AVANZATO")
+    print("   ✅ models/vocabulary.pkl - Vocabolario del modello")
+    print("   ✅ models/training_history.png - Grafici dell'addestramento")
+    print("   ✅ models/final_test_metrics.txt - Metriche finali del test")
+    print("   ✅ models/best_model_metrics.txt - Report dettagliato")
+    print("   ✅ models/plots/ - Grafici di valutazione avanzati")
+    print("   ✅ data/ - Dataset processati (train/val/test)")
+    
+    print("\n🎯 CARATTERISTICHE AVANZATE IMPLEMENTATE:")
+    print("   ✅ Architettura ibrida LSTM + Transformer")
+    print("   ✅ Multi-Head Self-Attention")
+    print("   ✅ Residual Connections")
+    print("   ✅ Layer Normalization")
+    print("   ✅ Positional Encoding")
+    print("   ✅ Preprocessing avanzato con gestione negazioni")
+    print("   ✅ Data Augmentation multi-tecnica")
+    print("   ✅ Focal Loss per dataset sbilanciati")
+    print("   ✅ Learning Rate Scheduling avanzato")
+    print("   ✅ Gradient Clipping e Weight Decay")
+    
+    print("\n🎯 Il modello AVANZATO è pronto per essere utilizzato!")
+    print("   Puoi testarlo con: python test_model.py")
+    print("   Oppure usarlo nell'app web: python app.py")
 
 if __name__ == '__main__':
     main() 
