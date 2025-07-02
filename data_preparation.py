@@ -9,15 +9,16 @@ import emoji
 import os
 from datasets import load_dataset
 import random
+import logging
 
 # Download delle risorse NLTK necessarie, in modo esplicito e robusto
 for resource in ['punkt', 'stopwords']:
     try:
         nltk.data.find(f'tokenizers/{resource}.zip')
     except LookupError:
-         try:
+        try:
             nltk.data.find(f'corpora/{resource}.zip')
-         except LookupError:
+        except LookupError:
             print(f"Risorsa NLTK '{resource}' non trovata. Download in corso...")
             nltk.download(resource)
 
@@ -84,14 +85,14 @@ class AdvancedTweetPreprocessor:
                 result.append(token)
                 
         return " ".join(result)
-
+    
     def clean_text(self, text):
         """
         Applica una pulizia avanzata e normalizzazione al testo di un tweet.
         """
         if pd.isna(text):
             return ""
-
+        
         # 1. Conversione in minuscolo e gestione emoji
         text = emoji.demojize(str(text).lower(), delimiters=(" :", ": "))
 
@@ -124,8 +125,9 @@ class AdvancedTweetPreprocessor:
         # 9. Gestione negazioni avanzata
         text = self.handle_negations(text)
 
-        # 10. Rimuove caratteri non-alfanumerici (mantenendo gli spazi e i token speciali)
-        text = re.sub(r'[^a-zA-Z\s_<>]+', ' ', text)
+        # 10. Rimuove caratteri speciali indesiderati, mantenendo parole, numeri, e i nostri token
+        # Questa regex è più permissiva e non rimuove parole valide come 'crap'
+        text = re.sub(r'[^\w\s<>_]', ' ', text)
 
         # 11. Tokenizzazione
         tokens = word_tokenize(text)
@@ -200,9 +202,9 @@ class AdvancedTweetPreprocessor:
             insert_word = random.choice(insert_words)
             insert_position = random.randint(0, len(tokens))
             tokens.insert(insert_position, insert_word)
-            
+        
         return ' '.join(tokens)
-
+    
     def augment_text_random_swap(self, text, n=1):
         """Scambia n coppie di parole adiacenti"""
         tokens = text.split()
@@ -447,4 +449,25 @@ def main():
 
 
 if __name__ == '__main__':
-    main() 
+    main()
+
+def intelligent_truncate(tokens, max_length, strategy='simple', head_tail_ratio=0.5):
+    """
+    Applica una strategia di troncamento intelligente a una lista di token,
+    assicurando che l'output non superi mai max_length.
+    """
+    if len(tokens) <= max_length:
+        return tokens
+
+    if strategy == 'head+tail':
+        # Calcola quanti token tenere dall'inizio e dalla fine
+        tail_count = int(max_length * (1 - head_tail_ratio))
+        head_count = max_length - tail_count
+        
+        # Prendi le due parti e le unisce
+        head = tokens[:head_count]
+        tail = tokens[-tail_count:]
+        return head + tail
+    
+    # La strategia di default è il troncamento semplice
+    return tokens[:max_length] 

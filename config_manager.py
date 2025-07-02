@@ -36,6 +36,8 @@ class DataConfig:
     vocab_size_limit: int = 20000
     balance_dataset: bool = True
     positive_ratio: float = 0.5
+    truncation_strategy: str = 'simple'
+    head_tail_ratio: float = 0.5
     
     # Preprocessing
     remove_urls: bool = True
@@ -55,6 +57,8 @@ class ModelConfig:
     dropout: float = 0.3
     bidirectional: bool = True
     use_attention: bool = True
+    use_self_attention: bool = False
+    use_residual: bool = False
     use_batch_norm: bool = True
     use_gradient_clipping: bool = True
     max_grad_norm: float = 1.0

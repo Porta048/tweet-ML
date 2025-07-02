@@ -18,33 +18,46 @@ import gc
 import psutil
 import matplotlib.pyplot as plt
 import seaborn as sns
+from data_preparation import intelligent_truncate
 
 class TweetDataset(Dataset):
-    """Dataset personalizzato per i tweet"""
+    """Crea un dataset PyTorch per i tweet, con troncamento intelligente."""
     
-    def __init__(self, texts, labels, vocab_to_idx, max_length=100):
+    def __init__(self, texts, labels, vocab_to_idx, max_length=100, 
+                 truncation_strategy='simple', head_tail_ratio=0.5):
         self.texts = texts
         self.labels = labels
         self.vocab_to_idx = vocab_to_idx
         self.max_length = max_length
-        
+        self.truncation_strategy = truncation_strategy
+        self.head_tail_ratio = head_tail_ratio
+        self.pad_token_idx = self.vocab_to_idx.get('<PAD>', 0)
+        self.unk_token_idx = self.vocab_to_idx.get('<UNK>', 1)
+    
     def __len__(self):
         return len(self.texts)
-    
+
     def __getitem__(self, idx):
-        text = self.texts.iloc[idx] if hasattr(self.texts, 'iloc') else self.texts[idx]
-        label = self.labels.iloc[idx] if hasattr(self.labels, 'iloc') else self.labels[idx]
+        text = str(self.texts[idx])
+        label = self.labels[idx]
         
-        # Converti testo in indici
+        # Tokenizzazione e conversione in indici
         tokens = text.split()
-        indices = [self.vocab_to_idx.get(token, self.vocab_to_idx['<UNK>']) for token in tokens]
         
-        # Padding o troncamento
-        if len(indices) > self.max_length:
-            indices = indices[:self.max_length]
-        else:
-            indices.extend([self.vocab_to_idx['<PAD>']] * (self.max_length - len(indices)))
+        # Troncamento intelligente prima della conversione in indici per efficienza
+        truncated_tokens = intelligent_truncate(
+            tokens, 
+            self.max_length, 
+            self.truncation_strategy, 
+            self.head_tail_ratio
+        )
         
+        indices = [self.vocab_to_idx.get(token, self.unk_token_idx) for token in truncated_tokens]
+        
+        # Padding
+        if len(indices) < self.max_length:
+            indices.extend([self.pad_token_idx] * (self.max_length - len(indices)))
+            
         return torch.tensor(indices, dtype=torch.long), torch.tensor(label, dtype=torch.long)
 
 class SentimentLSTM(nn.Module):
@@ -715,19 +728,29 @@ class SentimentTrainer:
         
         return history
     
-    def predict(self, text, vocab_to_idx, max_length=100):
-        """Predice il sentiment di un singolo testo"""
+    def predict(self, text, vocab_to_idx, max_length=100, 
+              truncation_strategy='simple', head_tail_ratio=0.5):
+        """Predice il sentiment di un singolo testo con troncamento intelligente"""
         self.model.eval()
         
         # Preprocessa il testo
         tokens = text.split()
-        indices = [vocab_to_idx.get(token, vocab_to_idx['<UNK>']) for token in tokens]
         
-        # Padding o troncamento
+        # Troncamento intelligente
+        truncated_tokens = intelligent_truncate(
+            tokens, 
+            max_length, 
+            truncation_strategy, 
+            head_tail_ratio
+        )
+        
+        indices = [vocab_to_idx.get(token, vocab_to_idx['<UNK>']) for token in truncated_tokens]
+        
+        # Padding o troncamento finale (di sicurezza)
         if len(indices) > max_length:
             indices = indices[:max_length]
         else:
-            indices.extend([vocab_to_idx['<PAD>']] * (max_length - len(indices)))
+            indices.extend([vocab_to_idx.get('<PAD>', 0)] * (max_length - len(indices)))
         
         # Converti in tensor
         input_tensor = torch.tensor([indices], dtype=torch.long).to(self.device)
@@ -759,17 +782,40 @@ def clear_memory():
     if torch.cuda.is_available():
         torch.cuda.empty_cache()
 
-def get_memory_usage():
-    """Ottiene l'uso della memoria corrente"""
+def get_memory_info_complete():
+    """Ottiene informazioni complete sulla memoria (unifica tutte le implementazioni)"""
+    memory = psutil.virtual_memory()
     process = psutil.Process(os.getpid())
-    memory_info = process.memory_info()
-    memory_usage_mb = memory_info.rss / 1024 / 1024
+    process_info = process.memory_info()
+    
+    result = {
+        # Informazioni sistema (da train_sentiment_model.py e test_model.py)
+        'total_gb': memory.total / (1024**3),
+        'available_gb': memory.available / (1024**3),
+        'free_gb': memory.free / (1024**3),
+        'used_percent': memory.percent,
+        
+        # Informazioni processo corrente
+        'process_mb': process_info.rss / (1024 * 1024),
+        
+        # Informazioni GPU se disponibile
+        'gpu_available': torch.cuda.is_available(),
+        'gpu_memory_mb': 0
+    }
     
     if torch.cuda.is_available():
-        gpu_memory_mb = torch.cuda.memory_allocated() / 1024 / 1024
-        return f"RAM: {memory_usage_mb:.0f}MB, GPU: {gpu_memory_mb:.0f}MB"
+        result['gpu_memory_mb'] = torch.cuda.memory_allocated() / (1024 * 1024)
+    
+    return result
+
+def get_memory_usage():
+    """Ottiene l'uso della memoria corrente (formato stringa per compatibilità)"""
+    info = get_memory_info_complete()
+    
+    if info['gpu_available']:
+        return f"RAM: {info['process_mb']:.0f}MB, GPU: {info['gpu_memory_mb']:.0f}MB"
     else:
-        return f"RAM: {memory_usage_mb:.0f}MB"
+        return f"RAM: {info['process_mb']:.0f}MB"
 
 class SentimentMetrics:
     """Classe per calcolare e visualizzare metriche avanzate di sentiment analysis"""

@@ -65,6 +65,73 @@
             padding: var(--spacing-md);
         }
         
+        /* Icon Styles for replacing emojis */
+        .icon {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.2em;
+            height: 1.2em;
+            margin-right: 0.3rem;
+            border-radius: 50%;
+            font-size: 0.9em;
+            font-weight: bold;
+        }
+        
+        .icon-sparkle {
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+            color: white;
+        }
+        
+        .icon-positive {
+            background: linear-gradient(45deg, #10b981, #059669);
+            color: white;
+        }
+        
+        .icon-negative {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            color: white;
+        }
+        
+        .icon-neutral {
+            background: linear-gradient(45deg, #6b7280, #4b5563);
+            color: white;
+        }
+        
+        .icon-warning {
+            background: linear-gradient(45deg, #f59e0b, #d97706);
+            color: white;
+        }
+        
+        .icon-sun {
+            background: linear-gradient(45deg, #fbbf24, #f59e0b);
+            color: white;
+            animation: glow 2s ease-in-out infinite alternate;
+        }
+        
+        @keyframes glow {
+            from { box-shadow: 0 0 5px rgba(251, 191, 36, 0.5); }
+            to { box-shadow: 0 0 15px rgba(251, 191, 36, 0.8); }
+        }
+        
+        .status-indicator {
+            display: inline-block;
+            width: 0.8rem;
+            height: 0.8rem;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+        
+        .status-positive {
+            background: linear-gradient(45deg, #10b981, #059669);
+            box-shadow: 0 0 8px rgba(16, 185, 129, 0.4);
+        }
+        
+        .status-negative {
+            background: linear-gradient(45deg, #ef4444, #dc2626);
+            box-shadow: 0 0 8px rgba(239, 68, 68, 0.4);
+        }
+        
         /* Main Layout */
         .container {
             background: var(--surface-color);
@@ -198,159 +265,181 @@
         }
         
         .btn-secondary {
-            background-color: transparent;
-            color: var(--text-secondary);
-            border: 1px solid var(--border-color);
+            background-color: var(--surface-color);
+            color: var(--text-primary);
+            border: 2px solid var(--border-color);
             padding: 0.5rem 1rem;
             font-size: 0.875rem;
-            margin: 0.25rem;
         }
         
-        .btn-secondary:hover {
+        .btn-secondary:hover:not(:disabled) {
             background-color: var(--background-color);
             border-color: var(--primary-color);
             color: var(--primary-color);
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
         }
         
-        /* Result Styling */
+        /* Result Display */
         .result {
+            display: none;
             margin-top: var(--spacing-xl);
             padding: var(--spacing-lg);
             border-radius: var(--border-radius);
-            border: 1px solid;
-            display: none;
-            animation: fadeIn 0.3s ease;
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .result.success {
-            background-color: #ecfdf5;
-            border-color: #10b981;
-            color: #065f46;
-        }
-        
-        .result.error {
-            background-color: #fef2f2;
-            border-color: #ef4444;
-            color: #991b1b;
+            border: 2px solid var(--border-color);
+            background-color: var(--surface-color);
         }
         
         .result.loading {
-            background-color: #eff6ff;
             border-color: var(--primary-color);
-            color: var(--primary-color);
+            background-color: #eff6ff;
+        }
+        
+        .result.success {
+            border-color: var(--success-color);
+            background-color: #f0fdf4;
+        }
+        
+        .result.error {
+            border-color: var(--error-color);
+            background-color: #fef2f2;
         }
         
         .result-header {
             display: flex;
             align-items: center;
-            gap: var(--spacing-sm);
-            margin-bottom: var(--spacing-sm);
+            margin-bottom: var(--spacing-md);
         }
         
         .result-icon {
+            margin-right: var(--spacing-sm);
             font-size: 1.5rem;
         }
         
         .result-title {
-            font-size: 1.25rem;
+            font-size: 1.125rem;
             font-weight: 600;
+            color: var(--text-primary);
         }
         
         .result-confidence {
-            font-size: 1rem;
-            margin-bottom: var(--spacing-sm);
-        }
-        
-        .result-details {
+            margin-bottom: var(--spacing-md);
             font-size: 0.875rem;
-            opacity: 0.8;
+            color: var(--text-secondary);
         }
         
         .progress-bar {
             width: 100%;
             height: 8px;
-            background-color: rgba(0,0,0,0.1);
+            background-color: var(--border-color);
             border-radius: 4px;
             overflow: hidden;
-            margin: var(--spacing-sm) 0;
+            margin-top: var(--spacing-sm);
         }
         
         .progress-fill {
             height: 100%;
-            background-color: currentColor;
+            background: linear-gradient(90deg, var(--primary-color), var(--primary-hover));
+            border-radius: 4px;
             transition: width 0.3s ease;
+        }
+        
+        .result-details {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            line-height: 1.4;
         }
         
         /* Examples Section */
         .examples {
             margin-top: var(--spacing-xl);
-            padding-top: var(--spacing-lg);
+            padding-top: var(--spacing-xl);
             border-top: 1px solid var(--border-color);
         }
         
         .examples-title {
-            font-size: 0.875rem;
-            font-weight: 500;
-            color: var(--text-secondary);
-            margin-bottom: var(--spacing-md);
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: var(--spacing-lg);
             text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .examples-grid {
-            display: flex;
-            flex-wrap: wrap;
+            display: grid;
+            grid-template-columns: 1fr;
             gap: var(--spacing-sm);
-            justify-content: center;
+        }
+        
+        @media (min-width: 768px) {
+            .examples-grid {
+                grid-template-columns: repeat(3, 1fr);
+            }
         }
         
         /* Loading Spinner */
         .spinner {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            border: 2px solid rgba(255,255,255,0.3);
-            border-radius: 50%;
+            width: 1rem;
+            height: 1rem;
+            border: 2px solid transparent;
             border-top: 2px solid currentColor;
+            border-radius: 50%;
             animation: spin 1s linear infinite;
             margin-right: var(--spacing-sm);
         }
         
         @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+            to { transform: rotate(360deg); }
+        }
+        
+        /* Accessibility */
+        .sr-only {
+            position: absolute;
+            width: 1px;
+            height: 1px;
+            padding: 0;
+            margin: -1px;
+            overflow: hidden;
+            clip: rect(0, 0, 0, 0);
+            white-space: nowrap;
+            border: 0;
         }
         
         /* Responsive Design */
-        @media (max-width: 640px) {
+        @media (max-width: 767px) {
             .container {
                 padding: var(--spacing-lg);
                 margin: var(--spacing-sm);
             }
             
             .title {
-                font-size: 1.5rem;
+                font-size: 1.75rem;
             }
             
             .subtitle {
                 font-size: 1rem;
             }
-            
-            .examples-grid {
-                flex-direction: column;
-            }
-            
-            .btn-secondary {
-                width: 100%;
-                margin: 0.25rem 0;
+        }
+        
+        /* Focus Management */
+        :focus-visible {
+            outline: 2px solid var(--primary-color);
+            outline-offset: 2px;
+        }
+        
+        /* High Contrast Support */
+        @media (prefers-contrast: high) {
+            :root {
+                --border-color: #000000;
+                --text-secondary: #000000;
             }
         }
         
-        /* Accessibility */
+        /* Motion Preferences */
         @media (prefers-reduced-motion: reduce) {
             *, *::before, *::after {
                 animation-duration: 0.01ms !important;
@@ -358,45 +447,35 @@
                 transition-duration: 0.01ms !important;
             }
         }
-        
-        /* Print Styles */
-        @media print {
-            body {
-                background: white;
-            }
-            
-            .container {
-                box-shadow: none;
-                border: 1px solid #000;
-            }
-            
-            .btn, .examples {
-                display: none;
-            }
-        }
     </style>
 </head>
 <body>
     <main class="container" role="main">
         <header class="header">
-            <h1 class="title">🤖 Tweet Sentiment Analysis</h1>
-            <p class="subtitle">Discover the sentiment of your tweets with advanced artificial intelligence</p>
+            <h1 class="title">Tweet Sentiment Analysis</h1>
+            <p class="subtitle">Powered by Advanced AI &amp; Machine Learning</p>
         </header>
         
-        <form id="sentimentForm" onsubmit="return false;" novalidate>
+        <form id="sentimentForm" class="form" role="form" aria-labelledby="formTitle">
+            <h2 id="formTitle" class="sr-only">Enter text for sentiment analysis</h2>
+            
             <div class="form-group">
                 <label for="tweetText" class="form-label">
-                    Enter your tweet
+                    Enter your text for analysis:
                 </label>
                 <textarea 
                     id="tweetText" 
+                    name="text" 
                     class="form-textarea"
-                    placeholder="Write your tweet here... (e.g., 'I love this beautiful sunny day!')"
+                    placeholder="Write your tweet or text here... (max 280 characters)"
                     maxlength="280"
                     rows="4"
                     aria-describedby="charCounter helpText"
-                    required
+                    aria-required="true"
+                    autocomplete="off"
+                    spellcheck="true"
                 ></textarea>
+                
                 <div class="char-counter" id="charCounter" aria-live="polite">
                     <small id="helpText">Press Ctrl+Enter to analyze quickly</small>
                     <span class="char-count" id="charCount">0/280</span>
@@ -414,22 +493,25 @@
         </div>
         
         <section class="examples" aria-labelledby="examplesTitle">
-            <h2 id="examplesTitle" class="examples-title">✨ Try these examples</h2>
+            <h2 id="examplesTitle" class="examples-title">
+                <span class="icon icon-sparkle">★</span>
+                Try these examples
+            </h2>
             <div class="examples-grid">
                 <button type="button" class="btn btn-secondary" 
-                        onclick="setExample('What a beautiful day! I am so happy and full of energy! ☀️')"
+                        onclick="setExample('What a beautiful day! I am so happy and full of energy! The sun is shining brightly.')"
                         aria-label="Positive example">
-                    😊 Positive Example
+                    <span class="icon icon-positive">+</span> Positive Example
                 </button>
                 <button type="button" class="btn btn-secondary" 
-                        onclick="setExample('What a terrible day, everything is going wrong and I am very disappointed 😞')"
+                        onclick="setExample('What a terrible day, everything is going wrong and I am very disappointed with today.')"
                         aria-label="Negative example">
-                    😔 Negative Example
+                    <span class="icon icon-negative">-</span> Negative Example
                 </button>
                 <button type="button" class="btn btn-secondary" 
                         onclick="setExample('Today I go to work as always, the weather is cloudy but okay')"
                         aria-label="Neutral example">
-                    😐 Neutral Example
+                    <span class="icon icon-neutral">•</span> Neutral Example
                 </button>
             </div>
         </section>
@@ -605,15 +687,15 @@
             const { sentiment, confidence, probabilities } = data;
             const isPositive = sentiment.toLowerCase().includes('positiv');
             
-            const icon = isPositive ? '😊' : '😔';
-            const emoji = isPositive ? '🟢' : '🔴';
+            const icon = isPositive ? '<span class="icon icon-positive">+</span>' : '<span class="icon icon-negative">-</span>';
+            const statusDot = isPositive ? '<span class="status-indicator status-positive"></span>' : '<span class="status-indicator status-negative"></span>';
             
             elements.result.className = 'result success';
             elements.result.style.display = 'block';
             elements.result.innerHTML = `
                 <div class="result-header">
                     <div class="result-icon">${icon}</div>
-                    <div class="result-title">${emoji} Sentiment: ${sentiment}</div>
+                    <div class="result-title">${statusDot} Sentiment: ${sentiment}</div>
                 </div>
                 <div class="result-confidence">
                     Confidence: ${confidence}%
@@ -632,7 +714,7 @@
             elements.result.style.display = 'block';
             elements.result.innerHTML = `
                 <div class="result-header">
-                    <div class="result-icon">⚠️</div>
+                    <div class="result-icon"><span class="icon icon-warning">!</span></div>
                     <div class="result-title">Error</div>
                 </div>
                 <div class="result-details">${message}</div>

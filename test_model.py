@@ -1,11 +1,19 @@
 import torch
+import torch.nn as nn
+import numpy as np
 import pandas as pd
-from data_preparation import AdvancedTweetPreprocessor
-from sentiment_model import SentimentLSTM, SentimentTrainer, load_vocabulary
 import os
-import sys
 import logging
+import gc
+import time
+import chardet
+from typing import List, Tuple, Optional, Dict, Any
 import psutil
+from tqdm import tqdm
+from data_preparation import AdvancedTweetPreprocessor
+from sentiment_model import (SentimentLSTM, SentimentTrainer, TweetDataset, 
+                            load_vocabulary, clear_memory, get_memory_info_complete)
+import sys
 import warnings
 from typing import List, Dict, Tuple, Optional, Union
 import numpy as np
@@ -18,11 +26,20 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler('test_errors.log'),
-        logging.StreamHandler()
+        logging.FileHandler('test_errors.log', encoding='utf-8'),
+        logging.StreamHandler(sys.stdout)
     ]
 )
 logger = logging.getLogger(__name__)
+
+# Cerca lo StreamHandler tra i gestori del logger principale e imposta la codifica UTF-8
+for handler in logging.root.handlers:
+    if isinstance(handler, logging.StreamHandler) and handler.stream == sys.stdout:
+        try:
+            handler.setStream(open(sys.stdout.fileno(), mode='w', encoding='utf-8', buffering=1))
+        except Exception as e:
+            logger.warning(f"Impossibile configurare l'output della console su UTF-8: {e}")
+        break
 
 class EdgeCaseHandler:
     """Gestore centralizzato per tutti i casi edge nel testing"""
@@ -96,17 +113,6 @@ class EdgeCaseHandler:
         return 'utf-8'  # Fallback
     
     @staticmethod
-    def check_memory_usage() -> Dict[str, float]:
-        """Controlla uso memoria corrente"""
-        memory = psutil.virtual_memory()
-        return {
-            'total_gb': memory.total / (1024**3),
-            'available_gb': memory.available / (1024**3),
-            'used_percent': memory.percent,
-            'free_gb': memory.free / (1024**3)
-        }
-    
-    @staticmethod
     def estimate_batch_memory(num_samples: int, max_length: int = 128) -> float:
         """Stima memoria necessaria per batch (in GB)"""
         # Stima approssimativa basata su dimensioni tensori
@@ -143,7 +149,7 @@ class TweetSentimentPredictor:
                 return False
             
             # 2. Controlla memoria disponibile
-            memory_info = self.edge_handler.check_memory_usage()
+            memory_info = get_memory_info_complete()
             logger.info(f"💾 Memoria disponibile: {memory_info['available_gb']:.1f}GB")
             
             if memory_info['available_gb'] < 1.0:
@@ -318,7 +324,7 @@ class TweetSentimentPredictor:
         logger.info(f"🔄 Analisi batch di {len(tweet_list)} tweet...")
         
         # Controlla memoria disponibile
-        memory_info = self.edge_handler.check_memory_usage()
+        memory_info = get_memory_info_complete()
         estimated_memory = self.edge_handler.estimate_batch_memory(len(tweet_list))
         
         if estimated_memory > memory_info['available_gb'] * 0.8:
@@ -374,9 +380,7 @@ class TweetSentimentPredictor:
             
             # Cleanup memoria periodico
             if start_idx % (batch_size * 5) == 0:
-                gc.collect()
-                if torch.cuda.is_available():
-                    torch.cuda.empty_cache()
+                clear_memory()
         
         logger.info(f"✅ Batch completato: {len(results)} tweet processati")
         if errors_count > 0:
@@ -592,7 +596,7 @@ def interactive_test():
                 test_edge_cases()
                 continue
             elif tweet.lower() == 'memory':
-                memory = EdgeCaseHandler.check_memory_usage()
+                memory = get_memory_info_complete()
                 print(f"\n💾 Memoria sistema:")
                 print(f"   Totale: {memory['total_gb']:.1f}GB")
                 print(f"   Disponibile: {memory['available_gb']:.1f}GB")
@@ -777,7 +781,7 @@ def main():
         return
     
     # Controlla memoria
-    memory_info = EdgeCaseHandler.check_memory_usage()
+    memory_info = get_memory_info_complete()
     print(f"💾 Memoria disponibile: {memory_info['available_gb']:.1f}GB")
     
     if memory_info['available_gb'] < 1.0:
@@ -821,7 +825,7 @@ def main():
         elif choice == '4':
             test_edge_cases()
         elif choice == '5':
-            memory = EdgeCaseHandler.check_memory_usage()
+            memory = get_memory_info_complete()
             print(f"\n💻 INFORMAZIONI SISTEMA")
             print("="*40)
             print(f"💾 Memoria totale: {memory['total_gb']:.1f}GB")

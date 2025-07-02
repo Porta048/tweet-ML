@@ -12,7 +12,7 @@ project:
 # Configurazione del dataset
 data:
   max_samples: 20000                    # Numero massimo di campioni da generare
-  max_length: 100                       # Lunghezza massima delle sequenze
+  max_length: 512                       # Lunghezza massima delle sequenze
   train_split: 0.7                      # Percentuale per training
   val_split: 0.15                       # Percentuale per validation  
   test_split: 0.15                      # Percentuale per test
@@ -32,18 +32,24 @@ data:
     remove_punctuation: false           # Mantieni punteggiatura per sentiment
     remove_numbers: false               # Mantieni numeri
     min_text_length: 3                  # Lunghezza minima del testo
+    
+    # Strategia di troncamento per testi lunghi
+    truncation_strategy: "head+tail"    # Opzioni: "simple", "head+tail"
+    head_tail_ratio: 0.75               # Per head+tail, percentuale di token da tenere dall'inizio (es: 0.75 = 75% inizio, 25% fine)
 
 # Architettura del modello
 model:
   # Parametri di base
-  embedding_dim: 128                    # Dimensione degli embeddings
-  hidden_dim: 64                        # Dimensione hidden states LSTM
+  embedding_dim: 256                    # Dimensione degli embeddings
+  hidden_dim: 128                       # Dimensione hidden states LSTM
   num_layers: 2                         # Numero di layer LSTM
   dropout: 0.3                          # Dropout rate
   bidirectional: true                   # LSTM bidirezionale
   
   # Meccanismi avanzati
-  use_attention: true                   # Attention mechanism
+  use_attention: true                   # Attention mechanism (su output LSTM)
+  use_self_attention: true              # Self-Attention (stile Transformer, abilita Positional Encoding)
+  use_residual: true                    # Connessioni residuali (consigliate con self-attention)
   use_batch_norm: true                  # Batch normalization
   use_gradient_clipping: true           # Gradient clipping
   max_grad_norm: 1.0                    # Norma massima dei gradienti
@@ -66,12 +72,12 @@ model:
 training:
   # Iperparametri di base
   num_epochs: 500                       # Numero massimo di epoche
-  batch_size: 32                        # Dimensione del batch
+  batch_size: 16                        # Dimensione del batch
   learning_rate: 0.001                  # Learning rate iniziale
   weight_decay: 1e-5                    # L2 regularization
   
   # Gradient accumulation
-  gradient_accumulation_steps: 1        # Step per accumulo gradienti
+  gradient_accumulation_steps: 4        # Step per accumulo gradienti
   
   # Ottimizzatore
   optimizer:
